@@ -120,6 +120,11 @@ pub const DEFAULT_PERMANENT_PASSWORD: &str = "Admin123..";
 /// Key of the "Allow remote configuration modification" checkbox.
 pub const ALLOW_REMOTE_CONFIG_MODIFICATION_KEY: &str = "allow-remote-config-modification";
 
+/// Key of the multi-node rendezvous auto failover switch. When several
+/// rendezvous servers are configured, this build switches to another node
+/// as soon as the current one is unreachable. Enabled unless explicitly off.
+pub const AUTO_FAILOVER_RENDEZVOUS_KEY: &str = "auto-failover-rendezvous";
+
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
@@ -1376,6 +1381,14 @@ impl Config {
                 "Y".to_owned(),
             );
         }
+        // Same default for the multi-node rendezvous auto failover switch.
+        if res
+            .get(AUTO_FAILOVER_RENDEZVOUS_KEY)
+            .map(|v| v.is_empty())
+            .unwrap_or(true)
+        {
+            res.insert(AUTO_FAILOVER_RENDEZVOUS_KEY.to_owned(), "Y".to_owned());
+        }
         res
     }
 
@@ -2339,6 +2352,11 @@ impl LocalConfig {
         // in this build, so that a controller can push/change options remotely
         // unless the user explicitly unchecks it.
         if k == ALLOW_REMOTE_CONFIG_MODIFICATION_KEY && v.is_empty() {
+            return "Y".to_owned();
+        }
+        // Multi-node failover is on by default: with several rendezvous
+        // servers configured the client must not stay pinned to a dead node.
+        if k == AUTO_FAILOVER_RENDEZVOUS_KEY && v.is_empty() {
             return "Y".to_owned();
         }
         v

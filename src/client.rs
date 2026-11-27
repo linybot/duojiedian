@@ -823,11 +823,14 @@ impl Client {
         // into_inner() once the stream is adopted into a connection attempt.
         let mut webrtc_offerer = webrtc_offerer.map(OffererGuard::new);
         let mut start = Instant::now();
+        let primary_server = rendezvous_server.clone();
         let mut socket = connect_tcp(&*rendezvous_server, CONNECT_TIMEOUT).await;
         debug_assert!(!servers.contains(&rendezvous_server));
         let rtt = start.elapsed();
         log::debug!("TCP connection establishment time used: {:?}", rtt);
         if socket.is_err() && !servers.is_empty() {
+            // Multi-node auto failover: the primary node is down, so switch to a
+            // standby one inside the same dial instead of failing the session.
             log::info!("try the other servers: {:?}", servers);
             for server in servers {
                 let server = check_port(server, RENDEZVOUS_PORT);
@@ -836,6 +839,14 @@ impl Client {
                     rendezvous_server = server;
                     break;
                 }
+            }
+            if socket.is_err() || rendezvous_server != primary_server {
+                crate::mark_rendezvous_server_down(&primary_server);
+                log::info!(
+                    "rendezvous failover: switched {} -> {}",
+                    primary_server,
+                    rendezvous_server
+                );
             }
             crate::refresh_rendezvous_server();
         } else if !contained {

@@ -53,6 +53,7 @@ pub const OPTION_HIDE_ELEVATE_BUTTON_IN_ACCEPT_WINDOW: &str =
 pub const OPTION_ALLOW_SCOPE_VIOLATION_CLOSE: &str = "allow-scope-violation-close";
 pub const OPTION_ALLOW_SCOPE_VIOLATION_ALARM: &str = "allow-scope-violation-alarm";
 pub const OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION: &str = "allow-remote-config-modification";
+pub const OPTION_AUTO_FAILOVER_RENDEZVOUS: &str = "auto-failover-rendezvous";
 pub const OPTION_ENABLE_LAN_DISCOVERY: &str = "enable-lan-discovery";
 pub const OPTION_DIRECT_ACCESS_PORT: &str = "direct-access-port";
 pub const OPTION_WHITELIST: &str = "whitelist";
@@ -265,6 +266,7 @@ pub const KEYS_LOCAL_SETTINGS: &[&str] = &[
     OPTION_ENABLE_IPV6_PUNCH,
     OPTION_ENABLE_PORT_FORWARD_MUX,
     OPTION_ENABLE_WEBRTC,
+    OPTION_AUTO_FAILOVER_RENDEZVOUS,
     OPTION_RELAY_FALLBACK_DELAY,
     OPTION_TOUCH_MODE,
     OPTION_SHOW_VIRTUAL_MOUSE,

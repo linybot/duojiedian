@@ -797,6 +797,149 @@ async fn test_nat_type_() -> ResultType<bool> {
     Ok(ok)
 }
 
+// ---------------------------------------------------------------------------
+// Multi-node rendezvous auto failover
+//
+// A deployment may advertise several rendezvous servers (`RENDEZVOUS_SERVERS`).
+// Both nodes host the same key and accept the same IDs, so a client must never
+// stay pinned to the node that is down. We probe every configured node (TCP
+// connect plus the hbbs key exchange, in parallel and with a short timeout),
+// remember the outcome for a short while and hand out live nodes first, with
+// dead ones kept at the tail as a last resort. A dial therefore switches to the
+// standby node immediately instead of waiting out CONNECT_TIMEOUT on the node
+// that is gone.
+// ---------------------------------------------------------------------------
+
+const FAILOVER_PROBE_TIMEOUT_MS: u64 = 3_000;
+const FAILOVER_CACHE_TTL_MS: u128 = 10_000;
+
+lazy_static::lazy_static! {
+    /// (probe timestamp, servers ordered by health then latency)
+    static ref FAILOVER_ORDER: Mutex<(Instant, Vec<String>)> =
+        Mutex::new((Instant::now() - Duration::from_secs(3_600), Vec::new()));
+}
+
+/// Auto failover only makes sense (and is only enabled) when several
+/// rendezvous servers are configured. Users can turn it off with the
+/// `auto-failover-rendezvous` option; it defaults to on.
+pub fn rendezvous_failover_enabled() -> bool {
+    if Config::get_rendezvous_servers().len() < 2 {
+        return false;
+    }
+    config::option2bool(
+        keys::OPTION_AUTO_FAILOVER_RENDEZVOUS,
+        &get_local_option(keys::OPTION_AUTO_FAILOVER_RENDEZVOUS),
+    )
+}
+
+/// Probe one node. `None` means unreachable (no TCP), `-1` means TCP is open
+/// but the node does not complete the hbbs key exchange (dead or broken
+/// hbbs, or a proxy answering instead of it); a positive value is the connect
+/// latency in microseconds.
+async fn probe_rendezvous_server(host: String, key: String) -> Option<(String, i64)> {
+    let tm = Instant::now();
+    let addr = crate::check_port(&host, RENDEZVOUS_PORT);
+    let connected = timeout(
+        FAILOVER_PROBE_TIMEOUT_MS,
+        socket_client::connect_tcp(&*addr, FAILOVER_PROBE_TIMEOUT_MS),
+    )
+    .await;
+    let Ok(Ok(mut conn)) = connected else {
+        log::info!("rendezvous failover: {} is unreachable", host);
+        return None;
+    };
+    let latency = tm.elapsed().as_micros() as i64;
+    let handshake = timeout(
+        FAILOVER_PROBE_TIMEOUT_MS,
+        secure_tcp_required(&mut conn, &key),
+    )
+    .await;
+    if !matches!(handshake, Ok(Ok(()))) {
+        log::info!(
+            "rendezvous failover: {} answers TCP but not the key exchange",
+            host
+        );
+        return Some((host, -1));
+    }
+    Some((host, latency))
+}
+
+fn cached_failover_order(servers: &[String]) -> Option<Vec<String>> {
+    let cache = FAILOVER_ORDER.lock().ok()?;
+    let (tm, order) = &*cache;
+    if tm.elapsed().as_millis() > FAILOVER_CACHE_TTL_MS {
+        return None;
+    }
+    if order.len() != servers.len() || !servers.iter().all(|s| order.contains(s)) {
+        return None;
+    }
+    Some(order.clone())
+}
+
+/// Configured rendezvous servers ordered for dialling: live nodes first
+/// (fastest first), then nodes that are degraded or down. No configured node
+/// is ever dropped, so a probe that fails for a transient reason cannot make
+/// the client unable to reach the only node that would have worked.
+pub async fn rendezvous_servers_by_health() -> Vec<String> {
+    let servers = Config::get_rendezvous_servers();
+    if servers.len() < 2 || !rendezvous_failover_enabled() {
+        return servers;
+    }
+    if let Some(order) = cached_failover_order(&servers) {
+        return order;
+    }
+    let key = crate::get_key(true).await;
+    let mut futs = Vec::with_capacity(servers.len());
+    for host in servers.iter().cloned() {
+        let key = key.clone();
+        futs.push(tokio::spawn(probe_rendezvous_server(host, key)));
+    }
+    let mut healthy: Vec<(String, i64)> = Vec::new();
+    let mut degraded: Vec<String> = Vec::new();
+    let mut down: Vec<String> = Vec::new();
+    for (host, fut) in servers.iter().cloned().zip(futs) {
+        match fut.await {
+            Ok(Some((h, latency))) if latency >= 0 => healthy.push((h, latency)),
+            Ok(Some((h, _))) => degraded.push(h),
+            Ok(None) => down.push(host),
+            Err(err) => {
+                log::warn!("rendezvous failover: probe of {} failed: {}", host, err);
+                down.push(host);
+            }
+        }
+    }
+    healthy.sort_by_key(|(_, latency)| *latency);
+    let mut order: Vec<String> = healthy.iter().map(|(h, _)| h.clone()).collect();
+    order.extend(degraded.iter().cloned());
+    order.extend(down.iter().cloned());
+    // Keep the classic latency view in sync, so the API server choice and the
+    // stored `rendezvous-server` option follow the same health picture.
+    for (host, latency) in healthy.iter() {
+        Config::update_latency(host, *latency);
+    }
+    for host in degraded.iter().chain(down.iter()) {
+        Config::update_latency(host, -1);
+    }
+    if healthy.is_empty() || !degraded.is_empty() || !down.is_empty() {
+        log::info!("rendezvous failover order: {:?}", order);
+    }
+    if let Ok(mut cache) = FAILOVER_ORDER.lock() {
+        *cache = (Instant::now(), order.clone());
+    }
+    order
+}
+
+/// Mark a node as unusable right after a failed dial, so the next attempt
+/// starts from the standby node without probing again.
+pub fn mark_rendezvous_server_down(host: &str) {
+    let host = host.split(':').next().unwrap_or(host).to_owned();
+    Config::update_latency(&host, -1);
+    if let Ok(mut cache) = FAILOVER_ORDER.lock() {
+        *cache = (Instant::now() - Duration::from_secs(3_600), Vec::new());
+    }
+    log::info!("rendezvous failover: marked {} as down", host);
+}
+
 pub async fn get_rendezvous_server(ms_timeout: u64) -> (String, Vec<String>, bool) {
     #[cfg(any(target_os = "android", target_os = "ios"))]
     let (mut a, mut b) = get_rendezvous_server_(ms_timeout);
@@ -819,6 +962,34 @@ pub async fn get_rendezvous_server(ms_timeout: u64) -> (String, Vec<String>, boo
         a = b.pop().unwrap_or(a);
         false
     };
+    // Multi-node auto failover: never dial a node that is down while a standby
+    // node is alive. Healthy nodes come first, dead ones stay at the tail so a
+    // transient probe failure cannot lock the client out of a working node.
+    if rendezvous_failover_enabled() {
+        let mut ordered_hosts = rendezvous_servers_by_health().await;
+        let order: Vec<String> = ordered_hosts
+            .drain(..)
+            .map(|x| socket_client::check_port(x, config::RENDEZVOUS_PORT))
+            .collect();
+        if let Some(active) = order.first().cloned() {
+            let mut candidates: Vec<String> = vec![active.clone()];
+            for host in order.into_iter().skip(1) {
+                if host != active && !candidates.contains(&host) {
+                    candidates.push(host);
+                }
+            }
+            for host in b.iter().chain(std::iter::once(&a)) {
+                if !candidates.contains(host) {
+                    candidates.push(host.clone());
+                }
+            }
+            let active = candidates.remove(0);
+            if active != a {
+                log::info!("rendezvous failover: dialing {} instead of {}", active, a);
+            }
+            return (active, candidates, true);
+        }
+    }
     (a, b, c)
 }
 
