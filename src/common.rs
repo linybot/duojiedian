@@ -1260,6 +1260,9 @@ pub async fn host_rotation_watchdog() {
                 "host node rolling: no controller yet, switching to {}",
                 next
             );
+            // `rendezvous_mediator` is not compiled for iOS, where a host does
+            // not run at all.
+            #[cfg(not(any(target_os = "ios")))]
             crate::rendezvous_mediator::RendezvousMediator::restart();
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
