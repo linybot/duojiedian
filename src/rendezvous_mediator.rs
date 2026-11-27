@@ -39,7 +39,7 @@ use crate::{
 
 type Message = RendezvousMessage;
 
-const STANDBY_RETRY_INTERVAL: f64 = 20.0;
+const STANDBY_RETRY_INTERVAL: f32 = 20.0;
 
 const FAST_RETRY_TIMEOUT: u64 = 3_000;
 
