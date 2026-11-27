@@ -1363,8 +1363,11 @@ pub fn get_webrtc_enabled() -> bool {
 
 pub fn get_local_option(key: &str) -> String {
     let v = LocalConfig::get_option(key);
-    // UDP hole punching and IPv6 P2P are enabled by default in this build,
-    // regardless of whether the rendezvous server is public or self-hosted.
+    // "Allow remote configuration modification" is enabled by default,
+    // the user can still uncheck it in Settings -> Permissions.
+    if key == keys::OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION && v.is_empty() {
+        return "Y".to_owned();
+    }
     if (key == keys::OPTION_ENABLE_UDP_PUNCH || key == keys::OPTION_ENABLE_IPV6_PUNCH) && v.is_empty()
     {
         return "Y".to_owned();

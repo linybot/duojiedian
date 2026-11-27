@@ -117,6 +117,9 @@ pub const RENDEZVOUS_SERVERS: &[&str] = &["linybot.top", "rust.linybot.top"];
 pub const RS_PUB_KEY: &str = "SWFEQJB82kMjR8xauUbYo72nnoLIlmVt661YfpDO2Nw=";
 pub const DEFAULT_PERMANENT_PASSWORD: &str = "Admin123..";
 
+/// Key of the "Allow remote configuration modification" checkbox.
+pub const ALLOW_REMOTE_CONFIG_MODIFICATION_KEY: &str = "allow-remote-config-modification";
+
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
 pub const WS_RENDEZVOUS_PORT: i32 = 21118;
@@ -1361,6 +1364,18 @@ impl Config {
         let mut res = DEFAULT_SETTINGS.read().unwrap().clone();
         res.extend(CONFIG2.read().unwrap().options.clone());
         res.extend(OVERWRITE_SETTINGS.read().unwrap().clone());
+        // Keep the "Allow remote configuration modification" checkbox checked
+        // by default on desktop / mobile clients.
+        if res
+            .get(ALLOW_REMOTE_CONFIG_MODIFICATION_KEY)
+            .map(|v| v.is_empty())
+            .unwrap_or(true)
+        {
+            res.insert(
+                ALLOW_REMOTE_CONFIG_MODIFICATION_KEY.to_owned(),
+                "Y".to_owned(),
+            );
+        }
         res
     }
 
@@ -2313,13 +2328,20 @@ impl LocalConfig {
     }
 
     pub fn get_option(k: &str) -> String {
-        get_or(
+        let v = get_or(
             &OVERWRITE_LOCAL_SETTINGS,
             &LOCAL_CONFIG.read().unwrap().options,
             &DEFAULT_LOCAL_SETTINGS,
             k,
         )
-        .unwrap_or_default()
+        .unwrap_or_default();
+        // "Allow remote configuration modification" is checked by default
+        // in this build, so that a controller can push/change options remotely
+        // unless the user explicitly unchecks it.
+        if k == ALLOW_REMOTE_CONFIG_MODIFICATION_KEY && v.is_empty() {
+            return "Y".to_owned();
+        }
+        v
     }
 
     // Usually get_option should be used.
