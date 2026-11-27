@@ -73,7 +73,9 @@ def bump_workflows(version: str) -> None:
 def bump_appimage(version: str) -> None:
     for p in sorted((ROOT / "appimage").glob("AppImageBuilder-*.yml")):
         s = read(p)
-        s2 = re.sub(r'(?m)^(\s*version:\s*)\S+', f"\\g<1>{version}", s)
+        # 只替换 AppDir 下的缩进 version，顶层的 "version: 1" 是 appimage-builder
+        # 的规范版本号，不能动
+        s2 = re.sub(r'(?m)^(\s{4}version:\s*)\S+', f"\\g<1>{version}", s)
         if s2 != s:
             write(p, s2)
 
