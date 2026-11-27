@@ -279,7 +279,7 @@ void showServerSettingsWithValue(
                     ),
                   ),
                   SizedBox(height: 8),
-                  buildField('Key', keyCtrl, ''),
+                  buildField('Key', keyCtrl, '', obscure: true),
                   if (isInProgress)
                     Padding(
                       padding: EdgeInsets.only(top: 8),

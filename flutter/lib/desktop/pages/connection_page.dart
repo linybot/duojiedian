@@ -10,6 +10,7 @@ import 'package:flutter_hbb/consts.dart';
 import 'package:flutter_hbb/desktop/widgets/popup_menu.dart';
 import 'package:flutter_hbb/models/state_model.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_hbb/models/peer_model.dart';
@@ -35,7 +36,11 @@ class OnlineStatusWidget extends StatefulWidget {
 class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   final _svcStopped = Get.find<RxBool>(tag: 'stop-service');
   final _svcIsUsingPublicServer = true.obs;
+  // [duojiedian] Real reachability of the network (probe the deployed nodes),
+  // so the status text is just "online / offline" instead of a status guess.
+  final _netOnline = true.obs;
   Timer? _updateTimer;
+  Timer? _netProbeTimer;
 
   double get em => 14.0;
   double? get height => bind.isIncomingOnly() ? null : em * 3;
@@ -55,11 +60,15 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
     _updateTimer = periodic_immediate(Duration(seconds: 1), () async {
       updateStatus();
     });
+    _netProbeTimer = periodic_immediate(Duration(seconds: 6), () async {
+      probeNetwork();
+    });
   }
 
   @override
   void dispose() {
     _updateTimer?.cancel();
+    _netProbeTimer?.cancel();
     super.dispose();
   }
 
@@ -117,10 +126,9 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
               width: 8,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
-                color: _svcStopped.value ||
-                        stateGlobal.svcStatus.value == SvcStatus.connecting
+                color: _svcStopped.value
                     ? kColorWarn
-                    : (stateGlobal.svcStatus.value == SvcStatus.ready
+                    : (_netOnline.value
                         ? Color.fromARGB(255, 50, 190, 166)
                         : Color.fromARGB(255, 224, 79, 95)),
               ),
@@ -156,15 +164,37 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   _buildConnStatusMsg() {
     widget.onSvcStatusChanged?.call();
     // [duojiedian] No "not ready" dead-end text; report plain online state.
-    final status = stateGlobal.svcStatus.value;
     final text = _svcStopped.value
         ? translate("Service is not running")
-        : status == SvcStatus.connecting
-            ? translate("connecting_status")
-            : status == SvcStatus.ready
-                ? translate("net_status_online")
-                : translate("net_status_offline");
+        : _netOnline.value
+            ? translate("net_status_online")
+            : translate("net_status_offline");
     return Text(text, style: TextStyle(fontSize: em));
+  }
+
+  /// [duojiedian] Probe the deployed nodes over HTTP: any answer (even an
+  /// error status) means the network path works, so we are "online".
+  probeNetwork() async {
+    final urls = <String>{};
+    try {
+      final api = (await bind.mainGetApiServer()).trim();
+      if (api.isNotEmpty) urls.add(api);
+    } catch (_) {}
+    for (final node in const ['linybot.top', 'rust.linybot.top']) {
+      urls.add('http://$node:21114');
+      urls.add('https://$node');
+    }
+    var online = false;
+    for (final u in urls) {
+      try {
+        await http
+            .get(Uri.parse(u))
+            .timeout(const Duration(seconds: 3));
+        online = true;
+        break;
+      } catch (_) {}
+    }
+    _netOnline.value = online;
   }
 
   updateStatus() async {

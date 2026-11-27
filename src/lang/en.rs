@@ -3,9 +3,9 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
     [
         ("desk_tip", "Your desktop can be accessed with this ID and password."),
         ("connecting_status", "Connecting to the RustDesk network..."),
-        ("not_ready_status", "Offline according to network info"),
-        ("net_status_online", "Online according to network info"),
-        ("net_status_offline", "Offline according to network info"),
+        ("not_ready_status", "Offline"),
+        ("net_status_online", "Online"),
+        ("net_status_offline", "Offline"),
         ("ID/Relay Server", "ID/Relay server"),
         ("id_change_tip", "Only a-z, A-Z, 0-9, - (dash) and _ (underscore) characters allowed. The first letter must be a-z, A-Z. Length between 6 and 16."),
         ("Slogan_tip", "Made with heart in this chaotic world!"),

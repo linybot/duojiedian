@@ -185,7 +185,9 @@ class UserModel {
       debugPrint("request /api/logout failed: err=$e");
     } finally {
       await reset(resetOther: true);
-      // [duojiedian] No account any more: stop pinning the node it lived on.
+      // [duojiedian] No account any more: stop pinning the node it lived on,
+      // and forget every wrong-node guess so the next login starts fresh.
+      _nodesWithoutAccount.clear();
       await bind.mainSetOption(key: 'account-node-pin', value: '');
       gFFI.dialogManager.dismissByTag(tag);
     }
@@ -234,7 +236,7 @@ class UserModel {
     final candidates = <String>[];
     for (final url in [
       primary,
-      for (final node in _deployNodes) 'http://$node:21114'
+      for (final node in _deployNodes) ...['http://$node:21114', 'https://$node']
     ]) {
       final u = url.trim();
       if (u.isEmpty || candidates.contains(u)) {
@@ -258,6 +260,13 @@ class UserModel {
         debugPrint('login: trying $_hostOf(url)');
         final result = await _loginOn(url, loginRequest);
         if (result.access_token == null) {
+          // A two-factor / email-verification challenge is a real answer from
+          // the node that owns the account: hand it back to the UI instead of
+          // moving on to the next node.
+          if (result.type == HttpType.kAuthResTypeEmailCheck ||
+              result.type == HttpType.kAuthResTypeTfaCheck) {
+            return result;
+          }
           // A node that does not own the account may answer without an error
           // field at all; that still means "not here".
           lastError ??= RequestException(0, 'login failed on ${_hostOf(url)}');
