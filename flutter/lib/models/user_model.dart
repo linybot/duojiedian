@@ -196,6 +196,17 @@ class UserModel {
   /// them; the login request rolls through them until one accepts the account.
   static const List<String> _deployNodes = ['linybot.top', 'rust.linybot.top'];
 
+  /// Host part of an "http://host:port" style server string.
+  static String _hostOf(String server) {
+    var s = server.trim();
+    final scheme = s.indexOf('://');
+    if (scheme >= 0) {
+      s = s.substring(scheme + 3);
+    }
+    final cut = s.indexOf(RegExp(r'[:/]'));
+    return (cut >= 0 ? s.substring(0, cut) : s).toLowerCase();
+  }
+
   /// Errors that mean "this node answered, the password is wrong": retrying on
   /// the other node would only add another failed attempt to the account.
   static bool _isCredentialError(String cause) {
@@ -214,7 +225,7 @@ class UserModel {
     final primary = await bind.mainGetApiServer();
     final candidates = <String>[primary];
     for (final node in _deployNodes) {
-      final url = 'http://$node:${21114}';
+      final url = 'http://$node:21114';
       if (!candidates.contains(url)) {
         candidates.add(url);
       }
@@ -265,6 +276,13 @@ class UserModel {
       final host = Uri.parse(url).host;
       if (host.isNotEmpty) {
         await bind.mainSetOption(key: 'account-node-pin', value: host);
+        // A stale manual pick on another node would win over the pin and cut
+        // the account off, so it is dropped as soon as the real node is known.
+        final custom = await bind.mainGetOption(key: 'custom-rendezvous-server');
+        if (custom.isNotEmpty && _hostOf(custom) != host) {
+          await bind.mainSetOption(key: 'custom-rendezvous-server', value: '');
+          await bind.mainSetOption(key: 'relay-server', value: '');
+        }
       }
     }
     return result;
