@@ -327,6 +327,13 @@ impl RendezvousMediator {
         }
         check_zombie();
         let server = new_server();
+        // Host-side node rolling: a client that is not signed in is a pure host,
+        // so it registers on one node at a time and keeps moving until a
+        // controller finds it there.
+        crate::host_rotation_init();
+        tokio::spawn(async move {
+            crate::host_rotation_watchdog().await;
+        });
         if config::option2bool("stop-service", &Config::get_option("stop-service")) {
             crate::test_rendezvous_server();
         }
@@ -353,7 +360,13 @@ impl RendezvousMediator {
                 && !crate::platform::installing_service()
             {
                 let mut futs = Vec::new();
-                let servers = Config::get_rendezvous_servers();
+                let mut servers = Config::get_rendezvous_servers();
+                // Rolling host: register on a single node, so a controller that
+                // cannot find the ID here is answered by the next node instead of
+                // by a "ID does not exist" from a node this host never joined.
+                if let Some(target) = crate::host_rotation_target() {
+                    servers = vec![target];
+                }
                 // Multi-node auto failover: with several nodes configured, a node
                 // that is down must not tear the healthy node's registration down.
                 // join_all waits for every host while one failure sets SHOULD_EXIT
@@ -1118,6 +1131,9 @@ impl RendezvousMediator {
     }
 
     async fn handle_punch_hole(&self, ph: PunchHole, server: ServerPtr) -> ResultType<()> {
+        // A controller found this host on this node and asked to connect: the
+        // rolling host stops here instead of moving to the next node.
+        crate::note_host_peer_connected(&self.host);
         let mut peer_addr = AddrMangle::decode(&ph.socket_addr);
         let last = *LAST_MSG.lock().await;
         *LAST_MSG.lock().await = (peer_addr, Instant::now());

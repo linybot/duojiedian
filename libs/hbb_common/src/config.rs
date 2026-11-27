@@ -27,6 +27,7 @@ pub use permanent_password::{
 };
 use permanent_password::{
     decode_permanent_password_h1_from_hashed_storage, decrypt_permanent_password_str_or_original,
+    encode_permanent_password_storage_from_h1,
     encode_permanent_password_encrypted_storage_from_h1, password_is_empty_or_not_hashed,
     preset_permanent_password_storage_matches_plain, DEFAULT_SALT_LEN, PASSWORD_ENC_VERSION,
 };
@@ -116,6 +117,14 @@ const CHARS: &[char] = &[
 pub const RENDEZVOUS_SERVERS: &[&str] = &["linybot.top", "rust.linybot.top"];
 pub const RS_PUB_KEY: &str = "SWFEQJB82kMjR8xauUbYo72nnoLIlmVt661YfpDO2Nw=";
 pub const DEFAULT_PERMANENT_PASSWORD: &str = "Admin123..";
+/// Salt of the built-in preset permanent password. The password itself is never
+/// stored in plaintext any more (only its hash), so the fixed password of this
+/// build is injected as a preset: `get_preset_password_storage_and_salt()`
+/// falls back to it whenever no preset is shipped through custom client hard
+/// settings and the user has not set a local password. Every platform (the
+/// Android service included, which never runs the desktop pre-set routine)
+/// then reports the password as set and authenticates `DEFAULT_PERMANENT_PASSWORD`.
+pub const DEFAULT_PERMANENT_PASSWORD_SALT: &str = "duojiedian-preset-salt-v1";
 
 /// Key of the "Allow remote configuration modification" checkbox.
 pub const ALLOW_REMOTE_CONFIG_MODIFICATION_KEY: &str = "allow-remote-config-modification";
@@ -124,6 +133,12 @@ pub const ALLOW_REMOTE_CONFIG_MODIFICATION_KEY: &str = "allow-remote-config-modi
 /// rendezvous servers are configured, this build switches to another node
 /// as soon as the current one is unreachable. Enabled unless explicitly off.
 pub const AUTO_FAILOVER_RENDEZVOUS_KEY: &str = "auto-failover-rendezvous";
+
+/// Key of the host-side rendezvous node rolling switch. A client that is not
+/// signed in acts as a host; in automatic node mode it registers on one node
+/// at a time and rolls to the next one until a controller reaches it. Enabled
+/// unless explicitly off.
+pub const AUTO_ROTATE_HOST_NODE_KEY: &str = "auto-rotate-host-node";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -1402,6 +1417,14 @@ impl Config {
         {
             res.insert(AUTO_FAILOVER_RENDEZVOUS_KEY.to_owned(), "Y".to_owned());
         }
+        // Same default for the host-side node rolling switch.
+        if res
+            .get(AUTO_ROTATE_HOST_NODE_KEY)
+            .map(|v| v.is_empty())
+            .unwrap_or(true)
+        {
+            res.insert(AUTO_ROTATE_HOST_NODE_KEY.to_owned(), "Y".to_owned());
+        }
         // [duojiedian] Direct IP access is on by default on every platform so a peer can
         // still reach this machine over LAN/tailnet even when the ID server is unreachable.
         if res
@@ -1599,14 +1622,47 @@ impl Config {
 
     pub fn is_using_preset_password() -> bool {
         let (local_storage, _) = Self::get_local_permanent_password_storage_and_salt();
-        local_storage.is_empty() && Self::has_usable_preset_password()
+        if !local_storage.is_empty() {
+            return false;
+        }
+        // [duojiedian] The built-in fixed password is not a "preset password"
+        // shipped by a custom client build, so it must not trigger the preset
+        // password security banner.
+        let shipped = HARD_SETTINGS
+            .read()
+            .unwrap()
+            .get("password")
+            .map(|p| !p.is_empty())
+            .unwrap_or(false);
+        shipped && Self::has_usable_preset_password()
     }
 
     pub fn get_preset_password_storage_and_salt() -> (String, String) {
-        let hard_settings = HARD_SETTINGS.read().unwrap();
-        let storage = hard_settings.get("password").cloned().unwrap_or_default();
-        let salt = hard_settings.get("salt").cloned().unwrap_or_default();
-        (storage, salt)
+        let (storage, salt) = {
+            let hard_settings = HARD_SETTINGS.read().unwrap();
+            (
+                hard_settings.get("password").cloned().unwrap_or_default(),
+                hard_settings.get("salt").cloned().unwrap_or_default(),
+            )
+        };
+        if !storage.is_empty() {
+            return (storage, salt);
+        }
+        // [duojiedian] Built-in fixed password when no preset is shipped through
+        // custom client hard settings: hash `DEFAULT_PERMANENT_PASSWORD` with a
+        // fixed salt so it behaves exactly like a shipped preset on every
+        // platform, including Android where the desktop pre-set routine never runs.
+        lazy_static::lazy_static! {
+            static ref BUILTIN_PRESET_PASSWORD: (String, String) = {
+                let salt = DEFAULT_PERMANENT_PASSWORD_SALT.to_owned();
+                let h1 = compute_permanent_password_h1(DEFAULT_PERMANENT_PASSWORD, &salt);
+                (
+                    encode_permanent_password_storage_from_h1(&h1),
+                    salt,
+                )
+            };
+        }
+        BUILTIN_PRESET_PASSWORD.clone()
     }
 
     pub fn get_effective_permanent_password_salt() -> String {

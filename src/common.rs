@@ -975,6 +975,297 @@ pub async fn rendezvous_live_servers() -> Vec<String> {
     healthy.drain(..).map(|(host, _)| host).collect()
 }
 
+// ---------------------------------------------------------------------------
+// Peer -> node affinity
+//
+// A multi-node deployment shares one key but every hbbs keeps its own ID
+// registry. A host registered on node 2 therefore answers "ID does not exist"
+// to a lookup on node 1, even though node 1 is perfectly healthy. Health
+// probing alone can never resolve that: the node is up, it simply does not know
+// the peer.
+//
+// So the outcome of a dial is remembered per peer: the node that accepted the
+// peer is stored, and the next dial for the same peer starts there. When a dial
+// still fails with an unknown-peer answer, the entry is dropped and the other
+// configured nodes are tried in the same attempt, which turns "auto" into a
+// search that ends on the node actually hosting the peer.
+// ---------------------------------------------------------------------------
+
+lazy_static::lazy_static! {
+    static ref PEER_NODE_MAP: Mutex<Option<std::collections::HashMap<String, String>>> =
+        Mutex::new(None);
+}
+
+fn peer_node_map_path() -> std::path::PathBuf {
+    Config::path("peer_node_map.json")
+}
+
+fn normalize_node(host: &str) -> String {
+    host.split(':').next().unwrap_or(host).trim().to_lowercase()
+}
+
+fn with_peer_node_map<R>(
+    f: impl FnOnce(&mut std::collections::HashMap<String, String>) -> R,
+) -> R {
+    let mut guard = match PEER_NODE_MAP.lock() {
+        Ok(g) => g,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    if guard.is_none() {
+        let loaded = std::fs::read_to_string(peer_node_map_path())
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_default();
+        *guard = Some(loaded);
+    }
+    let map = guard.as_mut().unwrap();
+    let res = f(map);
+    if let Ok(s) = serde_json::to_string(&*map) {
+        let _ = std::fs::write(peer_node_map_path(), s);
+    }
+    res
+}
+
+/// Remember which node accepted a peer, so later dials start there.
+pub fn remember_peer_server(peer: &str, server: &str) {
+    if peer.is_empty() || server.is_empty() {
+        return;
+    }
+    let node = normalize_node(server);
+    let changed = with_peer_node_map(|map| {
+        if map.get(peer) == Some(&node) {
+            return false;
+        }
+        map.insert(peer.to_owned(), node.clone());
+        true
+    });
+    if changed {
+        log::info!("peer node affinity: {} -> {}", peer, node);
+    }
+}
+
+/// Drop a peer -> node entry after that node answered "ID does not exist".
+pub fn forget_peer_server(peer: &str, server: &str) {
+    let node = normalize_node(server);
+    let changed = with_peer_node_map(|map| {
+        if map.get(peer) == Some(&node) {
+            map.remove(peer);
+            true
+        } else {
+            false
+        }
+    });
+    if changed {
+        log::info!("peer node affinity: dropped {} -> {}", peer, node);
+    }
+}
+
+pub fn preferred_server_for_peer(peer: &str) -> Option<String> {
+    with_peer_node_map(|map| map.get(peer).cloned())
+}
+
+/// Candidate nodes for dialling a peer, best first: the node that hosted it
+/// last time, then the healthy nodes by latency, then everything configured.
+/// The full configured list is always kept as a tail so a stale hint can never
+/// make the peer unreachable.
+pub async fn peer_server_candidates(peer: &str) -> Vec<String> {
+    let servers = Config::get_rendezvous_servers();
+    if servers.len() < 2 {
+        return servers;
+    }
+    let mut out: Vec<String> = Vec::new();
+    if let Some(pref) = preferred_server_for_peer(peer) {
+        if let Some(hit) = servers
+            .iter()
+            .find(|s| normalize_node(s) == pref)
+        {
+            out.push(hit.clone());
+        }
+    }
+    for host in rendezvous_servers_by_health().await {
+        if !out.iter().any(|o| normalize_node(o) == normalize_node(&host)) {
+            out.push(host);
+        }
+    }
+    for host in servers {
+        if !out.iter().any(|o| normalize_node(o) == normalize_node(&host)) {
+            out.push(host);
+        }
+    }
+    out
+}
+
+// ---------------------------------------------------------------------------
+// Host-side rendezvous node rolling
+//
+// A client that is not signed in never acts as a controller: it is a host that
+// has to be found by somebody else. In automatic node mode such a host
+// registers on one node at a time and keeps rolling (node 1 -> node 2 -> ...),
+// because only the controller can tell which node actually knows the ID. The
+// first successful punch hole - a controller reached the ID and asked to
+// connect - stops the rolling: the host stays on that node and remembers it for
+// the next start.
+// ---------------------------------------------------------------------------
+
+const HOST_ROTATE_INTERVAL_SECS: u64 = 20;
+const HOST_NODE_PIN_OPTION: &str = "host-node-pin";
+
+struct HostRotationState {
+    servers: Vec<String>,
+    index: usize,
+    since: Instant,
+    pinned: Option<String>,
+    ready: bool,
+}
+
+lazy_static::lazy_static! {
+    static ref HOST_ROTATION: Mutex<HostRotationState> = Mutex::new(HostRotationState {
+        servers: Vec::new(),
+        index: 0,
+        since: Instant::now(),
+        pinned: None,
+        ready: false,
+    });
+}
+
+fn with_host_rotation<R>(f: impl FnOnce(&mut HostRotationState) -> R) -> R {
+    match HOST_ROTATION.lock() {
+        Ok(mut guard) => f(&mut guard),
+        Err(poisoned) => f(&mut poisoned.into_inner()),
+    }
+}
+
+/// Rolling applies to a host in automatic node mode only: a node pinned by the
+/// user, a single node deployment, an explicit opt-out or a signed-in client
+/// all keep the normal behaviour.
+pub fn host_node_rolling_enabled() -> bool {
+    if use_ws() {
+        return false;
+    }
+    if !config::option2bool(
+        keys::OPTION_AUTO_ROTATE_HOST_NODE,
+        &get_local_option(keys::OPTION_AUTO_ROTATE_HOST_NODE),
+    ) {
+        return false;
+    }
+    if !Config::get_option("custom-rendezvous-server").is_empty() {
+        return false;
+    }
+    if !LocalConfig::get_option("access_token").is_empty() {
+        return false;
+    }
+    Config::get_rendezvous_servers().len() > 1 && rendezvous_failover_enabled()
+}
+
+/// Start the rolling state of this process, honouring the node that answered a
+/// controller last time.
+pub fn host_rotation_init() {
+    let servers = Config::get_rendezvous_servers();
+    let pinned = normalize_node(&Config::get_option(HOST_NODE_PIN_OPTION));
+    let index = if pinned.is_empty() {
+        0
+    } else {
+        servers
+            .iter()
+            .position(|s| normalize_node(s) == pinned)
+            .unwrap_or(0)
+    };
+    with_host_rotation(|st| {
+        st.servers = servers;
+        st.index = index;
+        st.since = Instant::now();
+        st.pinned = None;
+        st.ready = true;
+    });
+}
+
+/// The one node to register on right now. `None` means "use every configured
+/// node" (rolling disabled, or already pinned by a successful connection).
+pub fn host_rotation_target() -> Option<String> {
+    if !host_node_rolling_enabled() {
+        return None;
+    }
+    with_host_rotation(|st| {
+        if !st.ready || st.pinned.is_some() || st.servers.len() < 2 {
+            return None;
+        }
+        st.servers.get(st.index).cloned()
+    })
+}
+
+pub fn host_rotation_pinned() -> Option<String> {
+    with_host_rotation(|st| st.pinned.clone())
+}
+
+fn host_rotation_due() -> bool {
+    with_host_rotation(|st| {
+        st.ready
+            && st.pinned.is_none()
+            && st.since.elapsed().as_secs() >= HOST_ROTATE_INTERVAL_SECS
+    })
+}
+
+/// Leave the current node for the next one, round robin.
+pub fn host_rotation_advance() -> Option<String> {
+    with_host_rotation(|st| {
+        if !st.ready || st.servers.len() < 2 {
+            return None;
+        }
+        st.index = (st.index + 1) % st.servers.len();
+        st.since = Instant::now();
+        st.servers.get(st.index).cloned()
+    })
+}
+
+/// A controller reached this host over `server`: stop rolling and remember the
+/// node, so the next start begins there instead of guessing again.
+pub fn note_host_peer_connected(server: &str) {
+    let node = normalize_node(server);
+    if node.is_empty() {
+        return;
+    }
+    let stopped = with_host_rotation(|st| {
+        if st.pinned.is_some() {
+            return false;
+        }
+        st.pinned = Some(node.clone());
+        st.since = Instant::now();
+        true
+    });
+    if stopped {
+        Config::set_option(HOST_NODE_PIN_OPTION.to_owned(), node.clone());
+        log::info!(
+            "host node rolling: a controller reached us on {}, staying on it",
+            node
+        );
+    }
+}
+
+/// Keep the host moving between nodes until a controller finds it.
+pub async fn host_rotation_watchdog() {
+    if !host_node_rolling_enabled() {
+        return;
+    }
+    loop {
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        if host_rotation_pinned().is_some() {
+            log::info!("host node rolling: pinned, watchdog stops");
+            return;
+        }
+        if !host_rotation_due() || !host_node_rolling_enabled() {
+            continue;
+        }
+        if let Some(next) = host_rotation_advance() {
+            log::info!(
+                "host node rolling: no controller yet, switching to {}",
+                next
+            );
+            crate::rendezvous_mediator::RendezvousMediator::restart();
+            tokio::time::sleep(Duration::from_secs(5)).await;
+        }
+    }
+}
+
 /// Mark a node as unusable right after a failed dial, so the next attempt
 /// starts from the standby node without probing again.
 pub fn mark_rendezvous_server_down(host: &str) {

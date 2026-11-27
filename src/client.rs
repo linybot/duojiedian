@@ -415,7 +415,15 @@ impl Client {
         }
     }
 
-    /// Start a new connection.
+    /// Dial a peer, searching the configured nodes when "auto" picked one that
+    /// does not know the peer.
+    ///
+    /// Every configured hbbs keeps its own ID registry, so a host registered on
+    /// node 2 answers "ID does not exist" to a node 1 lookup even though node 1
+    /// is healthy - health probing cannot see that. Such an answer is taken as
+    /// a hint about the wrong node: the node is remembered per peer (and the
+    /// stale hint dropped), and the next node is dialled inside the same
+    /// attempt until one accepts the peer and the session is really up.
     async fn _start(
         peer: &str,
         key: &str,
@@ -436,6 +444,123 @@ impl Client {
         if config::is_incoming_only() && !is_switch_sides_back(conn_type, &interface).await {
             bail!("Incoming only mode");
         }
+        // [duojiedian] Allow "1.2.3.4:21119" style direct connections (custom direct-access port).
+        if let Some((host, port)) = crate::common::split_ipv4_port(peer) {
+            return Ok((
+                (
+                    connect_tcp_local(
+                        format!("{}:{}", host, port),
+                        None,
+                        CONNECT_TIMEOUT,
+                    )
+                    .await?,
+                    true,
+                    None,
+                    None,
+                    "TCP",
+                ),
+                (0, "".to_owned()),
+                false,
+            ));
+        }
+        if hbb_common::is_ip_str(peer) {
+            return Ok((
+                (
+                    connect_tcp_local(check_port(peer, RELAY_PORT + 1), None, CONNECT_TIMEOUT)
+                        .await?,
+                    true,
+                    None,
+                    None,
+                    "TCP",
+                ),
+                (0, "".to_owned()),
+                false,
+            ));
+        }
+        // Allow connect to {domain}:{port}
+        if hbb_common::is_domain_port_str(peer) {
+            return Ok((
+                (
+                    connect_tcp_local(peer, None, CONNECT_TIMEOUT).await?,
+                    true,
+                    None,
+                    None,
+                    "TCP",
+                ),
+                (0, "".to_owned()),
+                false,
+            ));
+        }
+        let candidates = if crate::rendezvous_failover_enabled() {
+            crate::peer_server_candidates(peer).await
+        } else {
+            Vec::new()
+        };
+        if candidates.len() < 2 {
+            return Self::_start_attempt(
+                peer,
+                key,
+                token,
+                conn_type,
+                interface,
+                candidates.into_iter().next(),
+            )
+            .await;
+        }
+        let mut last_err = None;
+        for (idx, server) in candidates.iter().enumerate() {
+            match Self::_start_attempt(
+                peer,
+                key,
+                token,
+                conn_type,
+                interface.clone(),
+                Some(server.clone()),
+            )
+            .await
+            {
+                Ok(ok) => {
+                    crate::remember_peer_server(peer, server);
+                    return Ok(ok);
+                }
+                Err(err) => {
+                    let unknown_peer = err.to_string().contains("ID does not exist");
+                    if unknown_peer && idx + 1 < candidates.len() {
+                        log::info!(
+                            "rendezvous failover: {} does not know peer {}, trying {}",
+                            server,
+                            peer,
+                            candidates[idx + 1]
+                        );
+                        crate::forget_peer_server(peer, server);
+                        last_err = Some(err);
+                        continue;
+                    }
+                    return Err(err);
+                }
+            }
+        }
+        Err(last_err.unwrap_or_else(|| anyhow!("no rendezvous node knows the peer")))
+    }
+
+    async fn _start_attempt(
+        peer: &str,
+        key: &str,
+        token: &str,
+        conn_type: ConnType,
+        interface: impl Interface,
+        forced_server: Option<String>,
+    ) -> ResultType<(
+        (
+            Stream,
+            bool,
+            Option<Vec<u8>>,
+            Option<KcpStream>,
+            &'static str,
+        ),
+        (i32, String),
+        bool,
+    )> {
         // to-do: remember the port for each peer, so that we can retry easier
         // [duojiedian] Allow "1.2.3.4:21119" style direct connections (custom direct-access port).
         if let Some((host, port)) = crate::common::split_ipv4_port(peer) {

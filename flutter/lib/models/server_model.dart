@@ -340,6 +340,12 @@ class ServerModel with ChangeNotifier {
       bind.mainSetOption(key: kOptionEnableKeyboard, value: 'N');
     } else {
       if (parent.target != null) {
+        /// Input control is delivered by the foreground service, so turning it
+        /// on while the service is stopped used to be reverted immediately.
+        /// Start the service first, then let the user grant accessibility.
+        if (!_isStart) {
+          startService();
+        }
         /// the result of toggle-on depends on user actions in the settings page.
         /// handle result, see [ServerModel.changeStatue]
         showInputWarnAlert(parent.target!);
