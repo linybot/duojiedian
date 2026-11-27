@@ -11,6 +11,7 @@
     - .github/workflows/*.yml 中的 VERSION 环境变量
     - appimage/AppImageBuilder-*.yml 的 version 字段
     - res/PKGBUILD 的 pkgver
+    - res/rpm*.spec 的 Version
 """
 import re
 import sys
@@ -91,6 +92,14 @@ def bump_pkgbuild(version: str) -> None:
         write(p, s2)
 
 
+def bump_rpm_specs(version: str) -> None:
+    for p in sorted((ROOT / "res").glob("rpm*.spec")):
+        s = read(p)
+        s2 = re.sub(r"(?m)^Version:.*$", f"Version:    {version}", s)
+        if s2 != s:
+            write(p, s2)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -109,6 +118,7 @@ def main() -> None:
     bump_workflows(version)
     bump_appimage(version)
     bump_pkgbuild(version)
+    bump_rpm_specs(version)
     print(f"done: {version}+{build}")
 
 
