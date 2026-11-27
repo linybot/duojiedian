@@ -207,8 +207,16 @@ class UserModel {
     return (cut >= 0 ? s.substring(0, cut) : s).toLowerCase();
   }
 
-  /// Errors that mean "this node answered, the password is wrong": retrying on
-  /// the other node would only add another failed attempt to the account.
+  /// [duojiedian] Nodes that answered "wrong credentials" while the account is
+  /// actually registered on another hbbs. Every hbbs has its own account
+  /// database and answers "username or password incorrect" for an account it
+  /// does not know, so such an answer cannot end the search: it only means
+  /// "not this node".
+  static final Set<String> _nodesWithoutAccount = <String>{};
+
+  /// Whether [cause] looks like a credential rejection. It is only used to pick
+  /// which error is shown when every node refuses, and to remember the node as
+  /// "does not hold this account" so the next login starts elsewhere.
   static bool _isCredentialError(String cause) {
     final c = cause.toLowerCase();
     return c.contains('password') ||
@@ -223,32 +231,57 @@ class UserModel {
   /// throw [RequestException]
   Future<LoginResponse> login(LoginRequest loginRequest) async {
     final primary = await bind.mainGetApiServer();
-    final candidates = <String>[primary];
-    for (final node in _deployNodes) {
-      final url = 'http://$node:21114';
-      if (!candidates.contains(url)) {
-        candidates.add(url);
+    final candidates = <String>[];
+    for (final url in [
+      primary,
+      for (final node in _deployNodes) 'http://$node:21114'
+    ]) {
+      final u = url.trim();
+      if (u.isEmpty || candidates.contains(u)) {
+        continue;
       }
+      candidates.add(u);
     }
+    // Nodes that already refused this account go last, so the node that really
+    // holds it is reached in the first round instead of after a wrong answer.
+    final unknown = _nodesWithoutAccount;
+    candidates.sort((a, b) {
+      final na = unknown.contains(_hostOf(a));
+      final nb = unknown.contains(_hostOf(b));
+      if (na == nb) return 0;
+      return na ? 1 : -1;
+    });
     RequestException? lastError;
+    RequestException? credentialError;
     for (final url in candidates) {
       try {
-        return await _loginOn(url, loginRequest);
+        final result = await _loginOn(url, loginRequest);
+        // The account lives here: forget every wrong-node guess.
+        unknown.remove(_hostOf(url));
+        return result;
       } on RequestException catch (e) {
-        lastError = e;
+        // A node without the account answers exactly like a wrong password, so
+        // it never ends the search; it only marks that node as "not here".
         if (_isCredentialError(e.cause)) {
-          rethrow;
+          unknown.add(_hostOf(url));
+          credentialError ??= e;
+        } else {
+          lastError = e;
         }
       } catch (e) {
         lastError ??= RequestException(0, e.toString());
       }
     }
-    throw lastError ?? RequestException(0, 'login failed');
+    throw credentialError ?? lastError ?? RequestException(0, 'login failed');
   }
 
   Future<LoginResponse> _loginOn(String url, LoginRequest loginRequest) async {
-    final resp = await http.post(Uri.parse('$url/api/login'),
-        body: jsonEncode(loginRequest.toJson()));
+    // A dead node must not park the login forever: each node gets one bounded
+    // attempt so the loop can move on to the node that actually answers.
+    final resp = await http
+        .post(Uri.parse('$url/api/login'),
+            body: jsonEncode(loginRequest.toJson()))
+        .timeout(const Duration(seconds: 8));
 
     final Map<String, dynamic> body;
     try {

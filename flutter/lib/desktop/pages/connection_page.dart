@@ -155,29 +155,16 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
 
   _buildConnStatusMsg() {
     widget.onSvcStatusChanged?.call();
-    final notReady = stateGlobal.svcStatus.value == SvcStatus.notReady;
-    final msg = Text(
-      _svcStopped.value
-          ? translate("Service is not running")
-          : stateGlobal.svcStatus.value == SvcStatus.connecting
-              ? translate("connecting_status")
-              : notReady
-                  ? translate("not_ready_status")
-                  : translate('Ready'),
-      style: TextStyle(fontSize: em),
-    );
-    if (!notReady) return msg;
-    // [duojiedian] Server unreachable should not be a dead end: direct IP still works.
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        msg,
-        Text(
-          translate('direct_ip_hint'),
-          style: TextStyle(fontSize: em * 0.85, color: Colors.grey),
-        ),
-      ],
-    );
+    // [duojiedian] No "not ready" dead-end text; report plain online state.
+    final status = stateGlobal.svcStatus.value;
+    final text = _svcStopped.value
+        ? translate("Service is not running")
+        : status == SvcStatus.connecting
+            ? translate("connecting_status")
+            : status == SvcStatus.ready
+                ? translate("net_status_online")
+                : translate("net_status_offline");
+    return Text(text, style: TextStyle(fontSize: em));
   }
 
   updateStatus() async {

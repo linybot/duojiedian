@@ -1066,6 +1066,19 @@ pub fn main_set_option(key: String, value: String) -> hbb_common::anyhow::Result
         );
     }
 
+    // The node that owns the signed-in account is written straight from the
+    // login code. It has to take effect on the very next dial, so the cached
+    // failover order (which would still point at the node that was tried first)
+    // is dropped here instead of expiring a minute later.
+    if key.eq(keys::OPTION_ACCOUNT_NODE_PIN) {
+        if value.trim().is_empty() {
+            crate::common::clear_account_node_pin();
+        } else {
+            crate::common::remember_account_node(&value);
+        }
+        return Ok(());
+    }
+
     // If `is_allow_tls_fallback` and https proxy is used, we need to restart rendezvous mediator.
     // No need to check if https proxy is used, because this option does not change frequently
     // and restarting mediator is safe even https proxy is not used.
