@@ -434,6 +434,7 @@ async fn query_no_active_conns_ipc() -> ResultType<bool> {
 }
 
 #[cfg(target_os = "macos")]
+#[allow(dead_code)]
 fn wait_for_failed_update_retry() {
     const FAILURE_MARKER: &str = "/var/root/.rustdeskupdate_failed";
     let marker = std::path::Path::new(FAILURE_MARKER);
@@ -472,43 +473,8 @@ fn wait_for_failed_update_retry() {
 /// Called from `start_os_service()` which runs as root via LaunchDaemon.
 #[cfg(target_os = "macos")]
 pub fn start_auto_update_macos() {
-    let spawn_result = std::thread::Builder::new()
-        .name("rustdesk-auto-update".to_owned())
-        .spawn(|| {
-            log::info!("[root-update] Auto-update scheduler thread started.");
-            std::thread::sleep(INITIAL_CHECK_DELAY);
-            wait_for_failed_update_retry();
-            let mut interval = DUR_ONE_DAY;
-            loop {
-                log::info!("[root-update] Running scheduled update check...");
-                let no_active_conns = has_no_active_conns_ipc();
-                if !no_active_conns {
-                    log::info!("[root-update] Active session in progress, retrying in 10 min.");
-                    interval = MIN_INTERVAL;
-                } else {
-                    match check_update_as_root() {
-                        Ok(update_started) => {
-                            if update_started {
-                                // The replacement script is detached and may fail
-                                // after this process returns. Always retry at the
-                                // failure interval until the new daemon replaces us.
-                                interval = RETRY_INTERVAL;
-                            } else {
-                                interval = DUR_ONE_DAY;
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("[root-update] Update check failed: {}", e);
-                            interval = RETRY_INTERVAL;
-                        }
-                    }
-                }
-                std::thread::sleep(interval);
-            }
-        });
-    if let Err(err) = spawn_result {
-        log::error!("[root-update] Failed to start scheduler thread: {}", err);
-    }
+    // Silent auto update removed in this build: no scheduled update checks,
+    // no downloads, no update notifications.
 }
 
 #[cfg(target_os = "macos")]

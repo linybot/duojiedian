@@ -1067,13 +1067,8 @@ pub fn is_modifier(evt: &KeyEvent) -> bool {
 }
 
 pub fn check_software_update() {
-    if is_custom_client() {
-        return;
-    }
-    let opt = LocalConfig::get_option(keys::OPTION_ENABLE_CHECK_UPDATE);
-    if config::option2bool(keys::OPTION_ENABLE_CHECK_UPDATE, &opt) {
-        std::thread::spawn(move || allow_err!(do_check_software_update()));
-    }
+    // Update prompt removed in this build: never query the release server, so no
+    // "new version available" notice can ever be raised in the UI.
 }
 
 pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String> {
@@ -1368,6 +1363,12 @@ pub fn get_webrtc_enabled() -> bool {
 
 pub fn get_local_option(key: &str) -> String {
     let v = LocalConfig::get_option(key);
+    // UDP hole punching and IPv6 P2P are enabled by default in this build,
+    // regardless of whether the rendezvous server is public or self-hosted.
+    if (key == keys::OPTION_ENABLE_UDP_PUNCH || key == keys::OPTION_ENABLE_IPV6_PUNCH) && v.is_empty()
+    {
+        return "Y".to_owned();
+    }
     if key == keys::OPTION_ENABLE_UDP_PUNCH
         || key == keys::OPTION_ENABLE_IPV6_PUNCH
         || key == keys::OPTION_ENABLE_WEBRTC

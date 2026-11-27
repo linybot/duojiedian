@@ -39,7 +39,14 @@ pub fn temporary_password() -> String {
     TEMPORARY_PASSWORD.read().unwrap().clone()
 }
 
+/// [duojiedian] Silent mode: force password-only approval with permanent password
+/// only, so an incoming session never triggers a click-to-accept prompt.
+const FORCE_SILENT_MODE: bool = true;
+
 fn verification_method() -> VerificationMethod {
+    if FORCE_SILENT_MODE {
+        return VerificationMethod::OnlyUsePermanentPassword;
+    }
     let method = Config::get_option("verification-method");
     if method == "use-temporary-password" {
         VerificationMethod::OnlyUseTemporaryPassword
@@ -75,6 +82,9 @@ pub fn has_valid_password() -> bool {
 }
 
 pub fn approve_mode() -> ApproveMode {
+    if FORCE_SILENT_MODE {
+        return ApproveMode::Password;
+    }
     let mode = Config::get_option("approve-mode");
     if mode == "password" {
         ApproveMode::Password
@@ -86,9 +96,10 @@ pub fn approve_mode() -> ApproveMode {
 }
 
 pub fn hide_cm() -> bool {
-    approve_mode() == ApproveMode::Password
-        && verification_method() == VerificationMethod::OnlyUsePermanentPassword
-        && crate::config::option2bool("allow-hide-cm", &Config::get_option("allow-hide-cm"))
+    FORCE_SILENT_MODE
+        || (approve_mode() == ApproveMode::Password
+            && verification_method() == VerificationMethod::OnlyUsePermanentPassword
+            && crate::config::option2bool("allow-hide-cm", &Config::get_option("allow-hide-cm")))
 }
 
 const VERSION_LEN: usize = 2;

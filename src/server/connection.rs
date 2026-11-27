@@ -3123,6 +3123,14 @@ impl Connection {
                 }
                 self.try_start_cm(lr.my_id.clone(), lr.my_name.clone(), self.authorized);
             } else if lr.password.is_empty() {
+                // [duojiedian] silent mode: the approval UI is hidden, so a
+                // password-less connection would hang forever without any hint.
+                // Reject it explicitly instead of leaving it pending.
+                if password::hide_cm() {
+                    self.send_login_error(crate::client::LOGIN_MSG_NO_PASSWORD_ACCESS)
+                        .await;
+                    return true;
+                }
                 #[cfg(not(any(target_os = "android", target_os = "ios")))]
                 if should_use_terminal_os_login_scope(self.terminal, &lr.os_login.username) {
                     if let Some(keep_alive) = self.prepare_terminal_login_for_authorization().await
