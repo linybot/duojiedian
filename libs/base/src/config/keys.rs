@@ -55,6 +55,7 @@ pub const OPTION_ALLOW_SCOPE_VIOLATION_ALARM: &str = "allow-scope-violation-alar
 pub const OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION: &str = "allow-remote-config-modification";
 pub const OPTION_AUTO_FAILOVER_RENDEZVOUS: &str = "auto-failover-rendezvous";
 pub const OPTION_AUTO_ROTATE_HOST_NODE: &str = "auto-rotate-host-node";
+pub const OPTION_ACCOUNT_NODE_PIN: &str = "account-node-pin";
 pub const OPTION_ENABLE_LAN_DISCOVERY: &str = "enable-lan-discovery";
 pub const OPTION_DIRECT_ACCESS_PORT: &str = "direct-access-port";
 pub const OPTION_WHITELIST: &str = "whitelist";

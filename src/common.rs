@@ -2,7 +2,10 @@ use std::{
     collections::HashMap,
     future::Future,
     net::SocketAddr,
-    sync::{Arc, Mutex, RwLock},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc, Mutex, RwLock,
+    },
     task::Poll,
 };
 
@@ -819,6 +822,11 @@ lazy_static::lazy_static! {
         Mutex::new((Instant::now() - Duration::from_secs(3_600), Vec::new()));
 }
 
+/// Round-robin cursor for the unauthenticated controller (see
+/// `peer_server_candidates`). Process-wide on purpose: it only decides which
+/// node is probed first, never which node is stored.
+static CONTROLLER_ROLL: AtomicUsize = AtomicUsize::new(0);
+
 /// Auto failover only makes sense (and is only enabled) when several
 /// rendezvous servers are configured. Users can turn it off with the
 /// `auto-failover-rendezvous` option; it defaults to on.
@@ -929,21 +937,25 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     order.extend(down.iter().cloned());
     // A node explicitly picked by the user wins over the latency order, as long
     // as it is actually alive; a dead pin falls back to the healthiest node.
-    let preferred = get_option("custom-rendezvous-server");
-    if !preferred.is_empty() {
-        let pref = preferred.split(':').next().unwrap_or("").to_owned();
-        let pref_alive = healthy
-            .iter()
-            .any(|(h, _)| h.split(':').next().unwrap_or("") == pref.as_str());
-        if pref_alive {
-            if let Some(idx) = order
-                .iter()
-                .position(|h| h.split(':').next().unwrap_or("") == pref.as_str())
-            {
-                let node = order.remove(idx);
-                order.insert(0, node);
-            }
+    // The node that accepted the account login is the next hint: every hbbs
+    // keeps its own account database, so a signed-in controller only stays
+    // signed in while it dials that node.
+    for preferred in [
+        normalize_node(&get_option("custom-rendezvous-server".to_owned())),
+        account_node_pin(),
+    ] {
+        if preferred.is_empty() {
+            continue;
         }
+        let pref_alive = healthy.iter().any(|(h, _)| normalize_node(h) == preferred);
+        if !pref_alive {
+            continue;
+        }
+        if let Some(idx) = order.iter().position(|h| normalize_node(h) == preferred) {
+            let node = order.remove(idx);
+            order.insert(0, node);
+        }
+        break;
     }
     // Keep the classic latency view in sync, so the API server choice and the
     // stored `rendezvous-server` option follow the same health picture.
@@ -1074,6 +1086,19 @@ pub async fn peer_server_candidates(peer: &str) -> Vec<String> {
         return servers;
     }
     let mut out: Vec<String> = Vec::new();
+    let mut health = rendezvous_servers_by_health().await;
+    // [duojiedian] Controller-side rolling: without a signed-in account the
+    // controller cannot tell which node hosts the peer, so each new attempt
+    // starts at the next node instead of always probing the same one first.
+    // A manual node choice or an account pin stops the rolling for good.
+    if preferred_server_for_peer(peer).is_none()
+        && account_node_pin().is_empty()
+        && normalize_node(&get_option(keys::OPTION_CUSTOM_RENDEZVOUS_SERVER.to_owned())).is_empty()
+        && health.len() > 1
+    {
+        let offset = CONTROLLER_ROLL.fetch_add(1, Ordering::Relaxed) % health.len();
+        health.rotate_left(offset);
+    }
     if let Some(pref) = preferred_server_for_peer(peer) {
         if let Some(hit) = servers
             .iter()
@@ -1082,7 +1107,7 @@ pub async fn peer_server_candidates(peer: &str) -> Vec<String> {
             out.push(hit.clone());
         }
     }
-    for host in rendezvous_servers_by_health().await {
+    for host in health {
         if !out.iter().any(|o| normalize_node(o) == normalize_node(&host)) {
             out.push(host);
         }
@@ -1093,6 +1118,47 @@ pub async fn peer_server_candidates(peer: &str) -> Vec<String> {
         }
     }
     out
+}
+
+// ---------------------------------------------------------------------------
+// Account -> node affinity (controller side)
+//
+// A controller signs in through the API of one hbbs. Like the ID registry, the
+// account database lives on each node separately, so a login only succeeds on
+// the node that owns the account. The node that answered is remembered and
+// dialled first from then on: the controller stops searching and stays on the
+// node where the account actually exists.
+// ---------------------------------------------------------------------------
+
+/// Node that accepted the account login, normalised, empty when unknown.
+pub fn account_node_pin() -> String {
+    normalize_node(&Config::get_option(keys::OPTION_ACCOUNT_NODE_PIN))
+}
+
+/// Remember the node that answered a successful account login.
+pub fn remember_account_node(host: &str) {
+    let node = normalize_node(host);
+    if node.is_empty() {
+        return;
+    }
+    if Config::get_option(keys::OPTION_ACCOUNT_NODE_PIN) != node {
+        log::info!("account node pin: {}", node);
+        Config::set_option(keys::OPTION_ACCOUNT_NODE_PIN.to_owned(), node);
+    }
+    if let Ok(mut cache) = FAILOVER_ORDER.lock() {
+        *cache = (Instant::now() - Duration::from_secs(3_600), Vec::new());
+    }
+}
+
+/// Forget the account node, e.g. after the user signed out.
+pub fn clear_account_node_pin() {
+    if !Config::get_option(keys::OPTION_ACCOUNT_NODE_PIN).is_empty() {
+        Config::set_option(keys::OPTION_ACCOUNT_NODE_PIN.to_owned(), "".to_owned());
+        log::info!("account node pin cleared");
+    }
+    if let Ok(mut cache) = FAILOVER_ORDER.lock() {
+        *cache = (Instant::now() - Duration::from_secs(3_600), Vec::new());
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1828,7 +1894,16 @@ fn get_api_server_(api: String, custom: String) -> String {
     if !api.is_empty() {
         return api.to_owned();
     }
-    let s0 = get_custom_rendezvous_server(custom);
+    let s0 = {
+        let custom = get_custom_rendezvous_server(custom);
+        if custom.is_empty() {
+            // A signed-in controller has to talk to the node that owns the
+            // account, not to whichever node happens to be fastest.
+            account_node_pin()
+        } else {
+            custom
+        }
+    };
     if !s0.is_empty() {
         let s = crate::increase_port(&s0, -2);
         if s == s0 {
@@ -1897,6 +1972,11 @@ pub fn get_local_option(key: &str) -> String {
     // the user can still uncheck it in Settings -> Permissions.
     if key == keys::OPTION_ALLOW_REMOTE_CONFIG_MODIFICATION && v.is_empty() {
         return "Y".to_owned();
+    }
+    // [duojiedian] The anti-scam dialog is noise for a fixed deployment, so it
+    // stays off unless somebody opts in explicitly.
+    if key == "show-scam-warning" && v.is_empty() {
+        return "N".to_owned();
     }
     if (key == keys::OPTION_ENABLE_UDP_PUNCH || key == keys::OPTION_ENABLE_IPV6_PUNCH) && v.is_empty()
     {

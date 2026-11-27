@@ -185,13 +185,57 @@ class UserModel {
       debugPrint("request /api/logout failed: err=$e");
     } finally {
       await reset(resetOther: true);
+      // [duojiedian] No account any more: stop pinning the node it lived on.
+      await bind.mainSetOption(key: 'account-node-pin', value: '');
       gFFI.dialogManager.dismissByTag(tag);
     }
   }
 
+  /// [duojiedian] Deployment nodes, kept in sync with the node picker. Every
+  /// hbbs keeps its own account database, so a login may only exist on one of
+  /// them; the login request rolls through them until one accepts the account.
+  static const List<String> _deployNodes = ['linybot.top', 'rust.linybot.top'];
+
+  /// Errors that mean "this node answered, the password is wrong": retrying on
+  /// the other node would only add another failed attempt to the account.
+  static bool _isCredentialError(String cause) {
+    final c = cause.toLowerCase();
+    return c.contains('password') ||
+        c.contains('passwd') ||
+        c.contains('密码') ||
+        c.contains('验证码') ||
+        c.contains('2fa') ||
+        c.contains('locked') ||
+        c.contains('禁用');
+  }
+
   /// throw [RequestException]
   Future<LoginResponse> login(LoginRequest loginRequest) async {
-    final url = await bind.mainGetApiServer();
+    final primary = await bind.mainGetApiServer();
+    final candidates = <String>[primary];
+    for (final node in _deployNodes) {
+      final url = 'http://$node:${21114}';
+      if (!candidates.contains(url)) {
+        candidates.add(url);
+      }
+    }
+    RequestException? lastError;
+    for (final url in candidates) {
+      try {
+        return await _loginOn(url, loginRequest);
+      } on RequestException catch (e) {
+        lastError = e;
+        if (_isCredentialError(e.cause)) {
+          rethrow;
+        }
+      } catch (e) {
+        lastError ??= RequestException(0, e.toString());
+      }
+    }
+    throw lastError ?? RequestException(0, 'login failed');
+  }
+
+  Future<LoginResponse> _loginOn(String url, LoginRequest loginRequest) async {
     final resp = await http.post(Uri.parse('$url/api/login'),
         body: jsonEncode(loginRequest.toJson()));
 
@@ -213,7 +257,17 @@ class UserModel {
       throw RequestException(0, body['error']);
     }
 
-    return getLoginResponseFromAuthBody(body);
+    final result = getLoginResponseFromAuthBody(body);
+    final token = result.access_token;
+    if (result.type == HttpType.kAuthResTypeToken && token != null) {
+      // [duojiedian] Keep the node that owns this account: it is dialled first
+      // from now on instead of searching the nodes again on every start.
+      final host = Uri.parse(url).host;
+      if (host.isNotEmpty) {
+        await bind.mainSetOption(key: 'account-node-pin', value: host);
+      }
+    }
+    return result;
   }
 
   LoginResponse getLoginResponseFromAuthBody(Map<String, dynamic> body) {

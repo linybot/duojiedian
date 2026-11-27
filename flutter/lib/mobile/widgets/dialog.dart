@@ -110,7 +110,9 @@ void showServerSettingsWithValue(
 
     Widget buildField(
         String label, TextEditingController controller, String errorMsg,
-        {String? Function(String?)? validator, bool autofocus = false}) {
+        {String? Function(String?)? validator,
+        bool autofocus = false,
+        bool obscure = false}) {
       if (isDesktop || isWeb) {
         return Row(
           children: [
@@ -129,6 +131,7 @@ void showServerSettingsWithValue(
                 showLabelText: false,
                 validator: validator,
                 autofocus: autofocus,
+                obscure: obscure,
               ).workaroundFreezeLinuxMint(),
             ),
           ],
@@ -140,6 +143,7 @@ void showServerSettingsWithValue(
         controller: controller,
         errorMsg: errorMsg,
         validator: validator,
+        obscure: obscure,
       ).workaroundFreezeLinuxMint();
     }
 
@@ -222,17 +226,18 @@ void showServerSettingsWithValue(
                   buildNodePicker(),
                   SizedBox(height: 8),
                   buildField(translate('ID Server'), idCtrl, idServerMsg.value,
-                      autofocus: true),
+                      autofocus: true, obscure: true),
                   SizedBox(height: 8),
                   if (!isIOS && !isWeb) ...[
                     buildField(translate('Relay Server'), relayCtrl,
-                        relayServerMsg.value),
+                        relayServerMsg.value, obscure: true),
                     SizedBox(height: 8),
                   ],
                   buildField(
                     translate('API Server'),
                     apiCtrl,
                     apiServerMsg.value,
+                    obscure: true,
                     validator: (v) {
                       if (v != null && v.isNotEmpty) {
                         if (!(v.startsWith('http://') ||
@@ -294,9 +299,14 @@ TextFormField serverSettingsTextFormField({
   bool autofocus = false,
   bool showLabelText = true,
   EdgeInsetsGeometry? contentPadding,
+  // [duojiedian] Deployment node addresses stay masked: the value is still
+  // editable, it is simply never rendered in clear text on screen.
+  bool obscure = false,
 }) {
   return TextFormField(
     controller: controller,
+    obscureText: obscure,
+    obscuringCharacter: '•',
     decoration: InputDecoration(
       labelText: showLabelText ? label : null,
       errorText: errorMsg.isEmpty ? null : errorMsg,

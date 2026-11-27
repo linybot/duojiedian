@@ -20,7 +20,6 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
-import android.graphics.Color
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
 import android.hardware.display.VirtualDisplay
@@ -51,6 +50,11 @@ const val DEFAULT_NOTIFY_TITLE = "RustDesk"
 const val DEFAULT_NOTIFY_TEXT = "Service is running"
 const val DEFAULT_NOTIFY_ID = 1
 const val NOTIFY_ID_OFFSET = 100
+
+// [duojiedian] A fixed deployment does not want connection banners, sounds or
+// vibration: every notification this service posts uses this silent channel.
+const val SILENT_NOTIFY_CHANNEL_ID = "RustDeskSilent"
+const val SILENT_NOTIFY_CHANNEL_NAME = "RustDesk (silent)"
 
 const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_VP9
 
@@ -817,16 +821,21 @@ class MainService : Service() {
     private fun initNotification() {
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationChannel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = "RustDesk"
-            val channelName = "RustDesk Service"
+            val channelId = SILENT_NOTIFY_CHANNEL_ID
+            val channelName = SILENT_NOTIFY_CHANNEL_NAME
+            // IMPORTANCE_LOW keeps the mandatory foreground service notification
+            // in the shade without a heads-up banner, sound or vibration.
             val channel = NotificationChannel(
                 channelId,
-                channelName, NotificationManager.IMPORTANCE_HIGH
+                channelName, NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "RustDesk Service Channel"
+                setShowBadge(false)
+                enableVibration(false)
+                enableLights(false)
+                setSound(null, null)
+                lockscreenVisibility = Notification.VISIBILITY_SECRET
             }
-            channel.lightColor = Color.BLUE
-            channel.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
             notificationManager.createNotificationChannel(channel)
             channelId
         } else {
@@ -851,9 +860,11 @@ class MainService : Service() {
         val notification = notificationBuilder
             .setOngoing(true)
             .setSmallIcon(R.mipmap.ic_stat_logo)
-            .setDefaults(Notification.DEFAULT_ALL)
+            .setDefaults(0)
+            .setSilent(true)
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentTitle(DEFAULT_NOTIFY_TITLE)
             .setContentText(translate(DEFAULT_NOTIFY_TEXT))
             .setOnlyAlertOnce(true)
@@ -928,7 +939,10 @@ class MainService : Service() {
     ) {
         val notification = notificationBuilder
             .setOngoing(false)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(0)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentTitle(translate("Do you accept?"))
             .setContentText("$type:$username-$peerId")
             // .setStyle(MediaStyle().setShowActionsInCompactView(0, 1))
@@ -947,7 +961,10 @@ class MainService : Service() {
         cancelNotification(clientID)
         val notification = notificationBuilder
             .setOngoing(false)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(0)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentTitle("$type ${translate("Established")}")
             .setContentText("$username - $peerId")
             .build()
@@ -962,7 +979,10 @@ class MainService : Service() {
     ) {
         val notification = notificationBuilder
             .setOngoing(false)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setDefaults(0)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentTitle(translate("Do you accept?"))
             .setContentText("$type:$username-$peerId")
             .build()
@@ -996,6 +1016,10 @@ class MainService : Service() {
         val notification = notificationBuilder
             .clearActions()
             .setStyle(null)
+            .setDefaults(0)
+            .setSilent(true)
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentTitle(title)
             .setContentText(text)
             .build()
