@@ -10,6 +10,7 @@
     - flutter/pubspec.yaml 的 version（含 build number）
     - .github/workflows/*.yml 中的 VERSION 环境变量
     - appimage/AppImageBuilder-*.yml 的 version 字段
+    - res/PKGBUILD 的 pkgver
 """
 import re
 import sys
@@ -80,6 +81,16 @@ def bump_appimage(version: str) -> None:
             write(p, s2)
 
 
+def bump_pkgbuild(version: str) -> None:
+    p = ROOT / "res/PKGBUILD"
+    if not p.exists():
+        return
+    s = read(p)
+    s2 = re.sub(r"(?m)^pkgver=.*$", f"pkgver={version}", s)
+    if s2 != s:
+        write(p, s2)
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print(__doc__)
@@ -97,6 +108,7 @@ def main() -> None:
     bump_pubspec(version, build)
     bump_workflows(version)
     bump_appimage(version)
+    bump_pkgbuild(version)
     print(f"done: {version}+{build}")
 
 
