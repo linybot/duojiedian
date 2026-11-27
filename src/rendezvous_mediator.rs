@@ -331,9 +331,11 @@ impl RendezvousMediator {
         // so it registers on one node at a time and keeps moving until a
         // controller finds it there.
         crate::host_rotation_init();
-        tokio::spawn(async move {
-            crate::host_rotation_watchdog().await;
-        });
+        if crate::host_rotation_watchdog_claim() {
+            tokio::spawn(async move {
+                crate::host_rotation_watchdog().await;
+            });
+        }
         if config::option2bool("stop-service", &Config::get_option("stop-service")) {
             crate::test_rendezvous_server();
         }

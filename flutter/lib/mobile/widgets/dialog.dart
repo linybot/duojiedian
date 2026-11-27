@@ -54,6 +54,20 @@ void setTemporaryPasswordLengthDialog(
   }, backDismiss: true, clickMaskDismiss: true);
 }
 
+// [duojiedian] Deployment nodes. Picking one is a manual choice and stops the
+// automatic node rolling; an empty server field means "auto".
+const kDeployNodes = ['linybot.top', 'rust.linybot.top'];
+
+String serverHostOf(String server) {
+  var s = server.trim();
+  final scheme = s.indexOf('://');
+  if (scheme >= 0) {
+    s = s.substring(scheme + 3);
+  }
+  final cut = s.indexOf(RegExp(r'[:/]'));
+  return (cut >= 0 ? s.substring(0, cut) : s).toLowerCase();
+}
+
 void showServerSettings(OverlayDialogManager dialogManager,
     void Function(VoidCallback) setState) async {
   Map<String, dynamic> options = {};
@@ -94,14 +108,23 @@ void showServerSettingsWithValue(
       setState(() {
         isInProgress = true;
       });
+      final picked = idCtrl.text.trim();
       bool ret = await setServerConfig(
           null,
           errMsgs,
           ServerConfig(
-              idServer: idCtrl.text.trim(),
+              idServer: picked,
               relayServer: relayCtrl.text.trim(),
               apiServer: apiCtrl.text.trim(),
               key: keyCtrl.text.trim()));
+      if (ret) {
+        // [duojiedian] Remember an explicit node pick so automatic rolling
+        // stops; clearing the field means "auto" and re-enables rolling.
+        final host = serverHostOf(picked);
+        await bind.mainSetOption(
+            key: 'manual-node-pin',
+            value: kDeployNodes.contains(host) ? host : '');
+      }
       setState(() {
         isInProgress = false;
       });
@@ -146,10 +169,6 @@ void showServerSettingsWithValue(
         obscure: obscure,
       ).workaroundFreezeLinuxMint();
     }
-
-    // Deployment nodes. Picking one pins it as the preferred node; the other
-    // one stays as standby so a dead node still fails over automatically.
-    const kDeployNodes = ['linybot.top', 'rust.linybot.top'];
 
     Widget buildNodePicker() {
       Widget nodeButton(String label, String value) {

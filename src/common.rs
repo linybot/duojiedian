@@ -3,7 +3,7 @@ use std::{
     future::Future,
     net::SocketAddr,
     sync::{
-        atomic::{AtomicUsize, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
         Arc, Mutex, RwLock,
     },
     task::Poll,
@@ -1093,7 +1093,7 @@ pub async fn peer_server_candidates(peer: &str) -> Vec<String> {
     // A manual node choice or an account pin stops the rolling for good.
     if preferred_server_for_peer(peer).is_none()
         && account_node_pin().is_empty()
-        && normalize_node(&get_option(keys::OPTION_CUSTOM_RENDEZVOUS_SERVER.to_owned())).is_empty()
+        && manual_node_pin().is_empty()
         && health.len() > 1
     {
         let offset = CONTROLLER_ROLL.fetch_add(1, Ordering::Relaxed) % health.len();
@@ -1194,6 +1194,8 @@ lazy_static::lazy_static! {
     });
 }
 
+static HOST_ROTATE_WATCHDOG: AtomicBool = AtomicBool::new(false);
+
 fn with_host_rotation<R>(f: impl FnOnce(&mut HostRotationState) -> R) -> R {
     match HOST_ROTATION.lock() {
         Ok(mut guard) => f(&mut guard),
@@ -1204,6 +1206,12 @@ fn with_host_rotation<R>(f: impl FnOnce(&mut HostRotationState) -> R) -> R {
 /// Rolling applies to a host in automatic node mode only: a node pinned by the
 /// user, a single node deployment, an explicit opt-out or a signed-in client
 /// all keep the normal behaviour.
+/// A node the user explicitly picked (node picker). It stops every automatic
+/// node movement: manual choice always wins over rolling.
+pub fn manual_node_pin() -> String {
+    normalize_node(&Config::get_option("manual-node-pin"))
+}
+
 pub fn host_node_rolling_enabled() -> bool {
     if use_ws() {
         return false;
@@ -1214,7 +1222,11 @@ pub fn host_node_rolling_enabled() -> bool {
     ) {
         return false;
     }
-    if !Config::get_option("custom-rendezvous-server").is_empty() {
+    // Only an explicit pick blocks rolling. `custom-rendezvous-server` is also
+    // written by the node picker, but it may be a leftover preset value; gating
+    // on it silently disabled rolling for every deployment that ships a
+    // default node, which is exactly the bug this replaces.
+    if !manual_node_pin().is_empty() {
         return false;
     }
     if !LocalConfig::get_option("access_token").is_empty() {
@@ -1227,22 +1239,56 @@ pub fn host_node_rolling_enabled() -> bool {
 /// controller last time.
 pub fn host_rotation_init() {
     let servers = Config::get_rendezvous_servers();
-    let pinned = normalize_node(&Config::get_option(HOST_NODE_PIN_OPTION));
-    let index = if pinned.is_empty() {
-        0
+    let stored_pin = normalize_node(&Config::get_option(HOST_NODE_PIN_OPTION));
+    let pin_index = if stored_pin.is_empty() {
+        None
     } else {
         servers
             .iter()
-            .position(|s| normalize_node(s) == pinned)
-            .unwrap_or(0)
+            .position(|s| normalize_node(s) == stored_pin)
     };
     with_host_rotation(|st| {
+        if st.ready {
+            // The mediator restarts itself on every node switch, and this
+            // function runs again each time. Keep the rolling position that
+            // `host_rotation_advance` just moved, otherwise the host would be
+            // pushed back to the first node and never actually rotate.
+            if let Some(i) = pin_index {
+                st.index = i;
+                st.pinned = Some(stored_pin.clone());
+            } else if st.index >= servers.len() {
+                st.index = 0;
+            }
+            st.servers = servers;
+            return;
+        }
         st.servers = servers;
-        st.index = index;
+        st.index = pin_index.unwrap_or(0);
         st.since = Instant::now();
-        st.pinned = None;
+        // A node that answered a controller last time is kept, as long as it is
+        // still part of the configured node list.
+        st.pinned = if pin_index.is_some() {
+            Some(stored_pin)
+        } else {
+            None
+        };
         st.ready = true;
     });
+}
+
+/// Forget the node a controller last reached us on and allow rolling again.
+pub fn clear_host_node_pin() {
+    Config::set_option(HOST_NODE_PIN_OPTION.to_owned(), String::new());
+    with_host_rotation(|st| {
+        st.pinned = None;
+        st.since = Instant::now();
+    });
+}
+
+/// Only one watchdog may run: every mediator restart spawns a new one, and
+/// several watchdogs would advance the node twice per interval.
+pub fn host_rotation_watchdog_claim() -> bool {
+    !HOST_ROTATE_WATCHDOG.swap(true, Ordering::SeqCst)
 }
 
 /// The one node to register on right now. `None` means "use every configured
@@ -1310,15 +1356,23 @@ pub fn note_host_peer_connected(server: &str) {
 /// Keep the host moving between nodes until a controller finds it.
 pub async fn host_rotation_watchdog() {
     if !host_node_rolling_enabled() {
+        HOST_ROTATE_WATCHDOG.store(false, Ordering::SeqCst);
         return;
     }
     loop {
         tokio::time::sleep(Duration::from_secs(1)).await;
         if host_rotation_pinned().is_some() {
             log::info!("host node rolling: pinned, watchdog stops");
+            HOST_ROTATE_WATCHDOG.store(false, Ordering::SeqCst);
             return;
         }
-        if !host_rotation_due() || !host_node_rolling_enabled() {
+        if !host_node_rolling_enabled() {
+            // A signed-in account or a manual pick ends the rolling for good.
+            log::info!("host node rolling: disabled, watchdog stops");
+            HOST_ROTATE_WATCHDOG.store(false, Ordering::SeqCst);
+            return;
+        }
+        if !host_rotation_due() {
             continue;
         }
         if let Some(next) = host_rotation_advance() {

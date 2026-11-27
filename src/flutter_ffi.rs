@@ -1076,6 +1076,22 @@ pub fn main_set_option(key: String, value: String) -> hbb_common::anyhow::Result
         } else {
             crate::common::remember_account_node(&value);
         }
+        // Re-register the host on the account node right away instead of
+        // waiting for the next reconnect cycle.
+        #[cfg(not(any(target_os = "ios")))]
+        crate::rendezvous_mediator::RendezvousMediator::restart();
+        return Ok(());
+    }
+
+    // An explicit node pick (or "Auto") changes which node this client should
+    // use as a host as well.
+    if key.eq("manual-node-pin") {
+        set_option(key, value.clone());
+        // A new pick (or "Auto") invalidates the node a controller reached us
+        // on: rolling may start again from that node's point of view.
+        crate::common::clear_host_node_pin();
+        #[cfg(not(any(target_os = "ios")))]
+        crate::rendezvous_mediator::RendezvousMediator::restart();
         return Ok(());
     }
 

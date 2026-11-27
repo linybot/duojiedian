@@ -1827,6 +1827,10 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
                   await bind.mainSetOption(
                       key: 'custom-rendezvous-server', value: value);
                   await bind.mainSetOption(key: 'relay-server', value: value);
+                  // [duojiedian] An explicit pick stops automatic node rolling;
+                  // "Auto" clears the marker and lets the client roll again.
+                  await bind.mainSetOption(
+                      key: 'manual-node-pin', value: value);
                   setState(() {});
                 },
           style: OutlinedButton.styleFrom(

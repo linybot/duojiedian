@@ -255,11 +255,19 @@ class UserModel {
     RequestException? credentialError;
     for (final url in candidates) {
       try {
+        debugPrint('login: trying $_hostOf(url)');
         final result = await _loginOn(url, loginRequest);
+        if (result.access_token == null) {
+          // A node that does not own the account may answer without an error
+          // field at all; that still means "not here".
+          lastError ??= RequestException(0, 'login failed on ${_hostOf(url)}');
+          continue;
+        }
         // The account lives here: forget every wrong-node guess.
         unknown.remove(_hostOf(url));
         return result;
       } on RequestException catch (e) {
+        debugPrint('login: ${_hostOf(url)} refused: ${e.cause}');
         // A node without the account answers exactly like a wrong password, so
         // it never ends the search; it only marks that node as "not here".
         if (_isCredentialError(e.cause)) {
@@ -269,6 +277,7 @@ class UserModel {
           lastError = e;
         }
       } catch (e) {
+        debugPrint('login: ${_hostOf(url)} failed: $e');
         lastError ??= RequestException(0, e.toString());
       }
     }
@@ -295,10 +304,10 @@ class UserModel {
       rethrow;
     }
     if (resp.statusCode != 200) {
-      throw RequestException(resp.statusCode, body['error'] ?? '');
+      throw RequestException(resp.statusCode, '${body['error'] ?? ''}');
     }
     if (body['error'] != null) {
-      throw RequestException(0, body['error']);
+      throw RequestException(0, '${body['error']}');
     }
 
     final result = getLoginResponseFromAuthBody(body);
@@ -309,8 +318,9 @@ class UserModel {
       final host = Uri.parse(url).host;
       if (host.isNotEmpty) {
         await bind.mainSetOption(key: 'account-node-pin', value: host);
-        // A stale manual pick on another node would win over the pin and cut
-        // the account off, so it is dropped as soon as the real node is known.
+        // An explicit pick from an earlier session would outrank the account
+        // node, so it is dropped as soon as the real node is known.
+        await bind.mainSetOption(key: 'manual-node-pin', value: '');
         final custom = await bind.mainGetOption(key: 'custom-rendezvous-server');
         if (custom.isNotEmpty && _hostOf(custom) != host) {
           await bind.mainSetOption(key: 'custom-rendezvous-server', value: '');
