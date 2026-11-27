@@ -1238,6 +1238,23 @@ pub fn check_port<T: std::string::ToString>(host: T, port: i32) -> String {
     hbb_common::socket_client::check_port(host, port)
 }
 
+/// [duojiedian] Split "1.2.3.4:21119" into host/port so direct IP connections can use a
+/// custom direct-access port. IPv6 literals are left untouched.
+pub fn split_ipv4_port(peer: &str) -> Option<(&str, u16)> {
+    if peer.matches(':').count() != 1 {
+        return None;
+    }
+    let (host, port) = peer.split_once(':')?;
+    if host.is_empty() || port.is_empty() || !hbb_common::is_ip_str(host) {
+        return None;
+    }
+    let port = port.parse::<u16>().ok()?;
+    if port == 0 {
+        return None;
+    }
+    Some((host, port))
+}
+
 #[inline]
 pub fn increase_port<T: std::string::ToString>(host: T, offset: i32) -> String {
     hbb_common::socket_client::increase_port(host, offset)

@@ -437,6 +437,25 @@ impl Client {
             bail!("Incoming only mode");
         }
         // to-do: remember the port for each peer, so that we can retry easier
+        // [duojiedian] Allow "1.2.3.4:21119" style direct connections (custom direct-access port).
+        if let Some((host, port)) = crate::common::split_ipv4_port(peer) {
+            return Ok((
+                (
+                    connect_tcp_local(
+                        format!("{}:{}", host, port),
+                        None,
+                        CONNECT_TIMEOUT,
+                    )
+                    .await?,
+                    true,
+                    None,
+                    None,
+                    "TCP",
+                ),
+                (0, "".to_owned()),
+                false,
+            ));
+        }
         if hbb_common::is_ip_str(peer) {
             return Ok((
                 (

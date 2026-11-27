@@ -1402,6 +1402,15 @@ impl Config {
         {
             res.insert(AUTO_FAILOVER_RENDEZVOUS_KEY.to_owned(), "Y".to_owned());
         }
+        // [duojiedian] Direct IP access is on by default on every platform so a peer can
+        // still reach this machine over LAN/tailnet even when the ID server is unreachable.
+        if res
+            .get(keys::OPTION_DIRECT_SERVER)
+            .map(|v| v.is_empty())
+            .unwrap_or(true)
+        {
+            res.insert(keys::OPTION_DIRECT_SERVER.to_owned(), "Y".to_owned());
+        }
         res
     }
 
@@ -1421,13 +1430,18 @@ impl Config {
     }
 
     pub fn get_option(k: &str) -> String {
-        get_or(
+        let v = get_or(
             &OVERWRITE_SETTINGS,
             &CONFIG2.read().unwrap().options,
             &DEFAULT_SETTINGS,
             k,
         )
-        .unwrap_or_default()
+        .unwrap_or_default();
+        // [duojiedian] Default direct IP access to on when the option was never written.
+        if k == keys::OPTION_DIRECT_SERVER && v.is_empty() {
+            return "Y".to_owned();
+        }
+        v
     }
 
     pub fn get_bool_option(k: &str) -> bool {

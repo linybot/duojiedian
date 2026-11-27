@@ -1812,6 +1812,57 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
     ]).marginOnly(bottom: _kListViewBottomMargin);
   }
 
+  /// [duojiedian] Quick node switcher for the two deployment nodes.
+  Widget nodeQuickPicker(BuildContext context) {
+    const nodes = ['linybot.top', 'rust.linybot.top'];
+    final current = bind.mainGetOptionSync(key: 'custom-rendezvous-server');
+    Widget chip(String label, String value) {
+      final selected = current == value;
+      return Padding(
+        padding: const EdgeInsets.only(right: 8, bottom: 6),
+        child: OutlinedButton(
+          onPressed: locked
+              ? null
+              : () async {
+                  await bind.mainSetOption(
+                      key: 'custom-rendezvous-server', value: value);
+                  await bind.mainSetOption(key: 'relay-server', value: value);
+                  setState(() {});
+                },
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 32),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            side: BorderSide(
+                color: selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).dividerColor),
+          ),
+          child: Text(label,
+              style: TextStyle(
+                  fontSize: 12,
+                  color:
+                      selected ? Theme.of(context).colorScheme.primary : null)),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(translate('Node'), style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 6),
+          Wrap(children: [
+            chip(translate('Auto'), ''),
+            for (var i = 0; i < nodes.length; i++)
+              chip('${translate('Node')} ${i + 1}', nodes[i]),
+          ]),
+        ],
+      ),
+    );
+  }
+
   Widget network(BuildContext context) {
     final hideServer =
         bind.mainGetBuildinOption(key: kOptionHideServerSetting) == 'Y';
@@ -1914,6 +1965,7 @@ class _NetworkState extends State<_Network> with AutomaticKeepAliveClientMixin {
                   title: 'ID/Relay Server',
                   onTap: () => showServerSettings(gFFI.dialogManager, setState),
                 ),
+              if (!hideServer) nodeQuickPicker(context),
               if (!hideProxy && !hideServer) divider,
               if (!hideProxy)
                 listTile(

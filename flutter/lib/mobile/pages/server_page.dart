@@ -485,7 +485,16 @@ class ServerInfo extends StatelessWidget {
           const Icon(Icons.warning_amber_sharp,
                   color: colorNegative, size: iconSize)
               .marginOnly(right: iconMarginRight),
-          Expanded(child: Text(translate('not_ready_status')))
+          Expanded(
+              child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(translate('not_ready_status')),
+              // [duojiedian] Keep direct IP usable when the ID server is unreachable.
+              Text(translate('direct_ip_hint'),
+                  style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ))
         ]);
       } else if (serverModel.connectStatus == 0) {
         return Row(children: [

@@ -96,10 +96,12 @@ pub fn approve_mode() -> ApproveMode {
 }
 
 pub fn hide_cm() -> bool {
-    FORCE_SILENT_MODE
-        || (approve_mode() == ApproveMode::Password
-            && verification_method() == VerificationMethod::OnlyUsePermanentPassword
-            && crate::config::option2bool("allow-hide-cm", &Config::get_option("allow-hide-cm")))
+    // [duojiedian] 不再强制隐藏连接窗口：密码输入框、连接状态都挂在连接窗口上，
+    // 窗口一旦隐藏用户就看不到密码框（表现为“设置密码访问但没有密码输入框”）。
+    // 静默模式只保证被控端不弹“接受/拒绝”，控制端窗口必须正常可见。
+    approve_mode() == ApproveMode::Password
+        && verification_method() == VerificationMethod::OnlyUsePermanentPassword
+        && crate::config::option2bool("allow-hide-cm", &Config::get_option("allow-hide-cm"))
 }
 
 const VERSION_LEN: usize = 2;
