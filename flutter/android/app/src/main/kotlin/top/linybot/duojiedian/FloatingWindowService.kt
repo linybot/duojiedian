@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package top.linybot.duojiedian
 
 import android.annotation.SuppressLint
 import android.app.PendingIntent

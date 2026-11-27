@@ -39,6 +39,10 @@ class ApiServerWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Customised client: the API server is intentionally empty and served over
+    // plain HTTP on the ID server, so the HTTPS hint is just noise here.
+    return const SizedBox.shrink();
+    // ignore: dead_code
     return ListenableBuilder(
       listenable: Listenable.merge([controller, idController]),
       builder: (context, child) {

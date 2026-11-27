@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package top.linybot.duojiedian
 
 /**
  * Handle events from flutter

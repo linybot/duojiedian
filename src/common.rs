@@ -927,6 +927,24 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     let mut order: Vec<String> = healthy.iter().map(|(h, _)| h.clone()).collect();
     order.extend(degraded.iter().cloned());
     order.extend(down.iter().cloned());
+    // A node explicitly picked by the user wins over the latency order, as long
+    // as it is actually alive; a dead pin falls back to the healthiest node.
+    let preferred = get_option("custom-rendezvous-server");
+    if !preferred.is_empty() {
+        let pref = preferred.split(':').next().unwrap_or("").to_owned();
+        let pref_alive = healthy
+            .iter()
+            .any(|(h, _)| h.split(':').next().unwrap_or("") == pref.as_str());
+        if pref_alive {
+            if let Some(idx) = order
+                .iter()
+                .position(|h| h.split(':').next().unwrap_or("") == pref.as_str())
+            {
+                let node = order.remove(idx);
+                order.insert(0, node);
+            }
+        }
+    }
     // Keep the classic latency view in sync, so the API server choice and the
     // stored `rendezvous-server` option follow the same health picture.
     for (host, latency) in healthy.iter() {

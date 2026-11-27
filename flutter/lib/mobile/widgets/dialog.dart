@@ -143,6 +143,69 @@ void showServerSettingsWithValue(
       ).workaroundFreezeLinuxMint();
     }
 
+    // Deployment nodes. Picking one pins it as the preferred node; the other
+    // one stays as standby so a dead node still fails over automatically.
+    const kDeployNodes = ['linybot.top', 'rust.linybot.top'];
+
+    Widget buildNodePicker() {
+      Widget nodeButton(String label, String value) {
+        final selected = idCtrl.text.trim() == value;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8, bottom: 4),
+          child: OutlinedButton(
+            onPressed: () {
+              setState(() {
+                idCtrl.text = value;
+                relayCtrl.text = value;
+              });
+            },
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 32),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              side: BorderSide(
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).dividerColor),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : null),
+            ),
+          ),
+        );
+      }
+
+      final picker = Wrap(
+        children: [
+          nodeButton(translate('Auto'), ''),
+          for (var i = 0; i < kDeployNodes.length; i++)
+            nodeButton('${translate('Node')} ${i + 1}', kDeployNodes[i]),
+        ],
+      );
+
+      if (isDesktop || isWeb) {
+        return Row(
+          children: [
+            SizedBox(width: labelWidth, child: Text(translate('Node'))),
+            SizedBox(width: labelSpacing),
+            Expanded(child: picker),
+          ],
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(translate('Node'), style: const TextStyle(fontSize: 12)),
+          const SizedBox(height: 4),
+          picker,
+        ],
+      );
+    }
+
     return CustomAlertDialog(
       title: Row(
         children: [
@@ -156,6 +219,8 @@ void showServerSettingsWithValue(
           child: Obx(() => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  buildNodePicker(),
+                  SizedBox(height: 8),
                   buildField(translate('ID Server'), idCtrl, idServerMsg.value,
                       autofocus: true),
                   SizedBox(height: 8),

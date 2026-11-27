@@ -1085,6 +1085,19 @@ impl Config {
         }
         let s = Self::get_option("custom-rendezvous-server");
         if !s.is_empty() {
+            // A node pinned by the user (custom client: pick node 1 or node 2)
+            // becomes the preferred node, but the other deployment nodes stay
+            // as standby candidates so automatic failover still works.
+            let host = s.split(':').next().unwrap_or("").to_owned();
+            if RENDEZVOUS_SERVERS.iter().any(|n| *n == host.as_str()) {
+                let mut servers = vec![s.clone()];
+                for node in RENDEZVOUS_SERVERS.iter() {
+                    if *node != host.as_str() {
+                        servers.push(node.to_string());
+                    }
+                }
+                return servers;
+            }
             return vec![s];
         }
         let s = PROD_RENDEZVOUS_SERVER.read().unwrap().clone();

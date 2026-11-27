@@ -278,6 +278,8 @@ pub static ref T: std::collections::HashMap<&'static str, &'static str> =
         ("How to get Android input permission?", "如何获取安卓的输入权限？"),
         ("android_input_permission_tip1", "为了让远程设备通过鼠标或触屏控制您的安卓设备，你需要允许 RustDesk 使用\"无障碍\"服务。"),
         ("android_input_permission_tip2", "请在接下来的系统设置页面里，找到并进入 [已安装的服务] 页面，将 [RustDesk Input] 服务开启。"),
+        ("Node", "节点"),
+        ("android_restricted_settings_tip", "若无障碍开关是灰色或反复自动关闭，请先允许本应用修改受限设置：设置 → 应用 → 本应用 → 右上角菜单 → 允许受限设置（Android 13 及以上）；部分机型还需在手机管家/安全中心的应用管控中解除限制。"),
         ("android_new_connection_tip", "收到新的连接控制请求，对方想要控制你当前的设备。"),
         ("android_service_will_start_tip", "开启录屏权限将自动开启服务，允许其他设备向此设备请求建立连接。"),
         ("android_stop_service_tip", "关闭服务将自动关闭所有已建立的连接。"),

@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package top.linybot.duojiedian
 
 import android.app.Activity
 import android.content.Intent
