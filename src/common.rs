@@ -837,6 +837,11 @@ pub fn rendezvous_failover_enabled() -> bool {
 /// hbbs, or a proxy answering instead of it); a positive value is the connect
 /// latency in microseconds.
 async fn probe_rendezvous_server(host: String, key: String) -> Option<(String, i64)> {
+    // `ws://` / `wss://` endpoints use another transport, probing them over
+    // plain TCP would produce a false "down" verdict; keep them as they are.
+    if host.contains("://") {
+        return Some((host, 0));
+    }
     let tm = Instant::now();
     let addr = crate::check_port(&host, RENDEZVOUS_PORT);
     let connected = timeout(
@@ -882,7 +887,9 @@ fn cached_failover_order(servers: &[String]) -> Option<Vec<String>> {
 /// the client unable to reach the only node that would have worked.
 pub async fn rendezvous_servers_by_health() -> Vec<String> {
     let servers = Config::get_rendezvous_servers();
-    if servers.len() < 2 || !rendezvous_failover_enabled() {
+    // WebSocket deployments dial through another port and transport, leave them
+    // untouched instead of probing the plain TCP port.
+    if servers.len() < 2 || use_ws() || !rendezvous_failover_enabled() {
         return servers;
     }
     if let Some(order) = cached_failover_order(&servers) {
