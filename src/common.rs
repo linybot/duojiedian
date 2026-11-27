@@ -985,8 +985,10 @@ pub async fn get_rendezvous_server(ms_timeout: u64) -> (String, Vec<String>, boo
                     candidates.push(host);
                 }
             }
+            // Keep the upstream invariant: the active server must never appear
+            // in the fallback list (client.rs debugs-asserts on it).
             for host in b.iter().chain(std::iter::once(&a)) {
-                if !candidates.contains(host) {
+                if host != &active && !candidates.contains(host) {
                     candidates.push(host.clone());
                 }
             }
