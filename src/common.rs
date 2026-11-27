@@ -846,7 +846,7 @@ async fn probe_rendezvous_server(host: String, key: String) -> Option<(String, i
     let addr = crate::check_port(&host, RENDEZVOUS_PORT);
     let connected = timeout(
         FAILOVER_PROBE_TIMEOUT_MS,
-        socket_client::connect_tcp(&*addr, FAILOVER_PROBE_TIMEOUT_MS),
+        socket_client::connect_tcp(addr.clone(), FAILOVER_PROBE_TIMEOUT_MS),
     )
     .await;
     let Ok(Ok(mut conn)) = connected else {
@@ -867,6 +867,33 @@ async fn probe_rendezvous_server(host: String, key: String) -> Option<(String, i
         return Some((host, -1));
     }
     Some((host, latency))
+}
+
+/// Probe all given nodes in parallel and classify them:
+/// healthy (key exchange completed, latency in microseconds), degraded (TCP
+/// open but no hbbs handshake) and down (not reachable at all).
+async fn probe_all_servers(servers: &[String]) -> (Vec<(String, i64)>, Vec<String>, Vec<String>) {
+    let key = crate::get_key(true).await;
+    let mut futs = Vec::with_capacity(servers.len());
+    for host in servers.iter().cloned() {
+        let key = key.clone();
+        futs.push(tokio::spawn(probe_rendezvous_server(host, key)));
+    }
+    let mut healthy: Vec<(String, i64)> = Vec::new();
+    let mut degraded: Vec<String> = Vec::new();
+    let mut down: Vec<String> = Vec::new();
+    for (host, fut) in servers.iter().cloned().zip(futs) {
+        match fut.await {
+            Ok(Some((h, latency))) if latency >= 0 => healthy.push((h, latency)),
+            Ok(Some((h, _))) => degraded.push(h),
+            Ok(None) => down.push(host),
+            Err(err) => {
+                log::warn!("rendezvous failover: probe of {} failed: {}", host, err);
+                down.push(host);
+            }
+        }
+    }
+    (healthy, degraded, down)
 }
 
 fn cached_failover_order(servers: &[String]) -> Option<Vec<String>> {
@@ -895,26 +922,7 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     if let Some(order) = cached_failover_order(&servers) {
         return order;
     }
-    let key = crate::get_key(true).await;
-    let mut futs = Vec::with_capacity(servers.len());
-    for host in servers.iter().cloned() {
-        let key = key.clone();
-        futs.push(tokio::spawn(probe_rendezvous_server(host, key)));
-    }
-    let mut healthy: Vec<(String, i64)> = Vec::new();
-    let mut degraded: Vec<String> = Vec::new();
-    let mut down: Vec<String> = Vec::new();
-    for (host, fut) in servers.iter().cloned().zip(futs) {
-        match fut.await {
-            Ok(Some((h, latency))) if latency >= 0 => healthy.push((h, latency)),
-            Ok(Some((h, _))) => degraded.push(h),
-            Ok(None) => down.push(host),
-            Err(err) => {
-                log::warn!("rendezvous failover: probe of {} failed: {}", host, err);
-                down.push(host);
-            }
-        }
-    }
+    let (mut healthy, degraded, down) = probe_all_servers(&servers).await;
     healthy.sort_by_key(|(_, latency)| *latency);
     let mut order: Vec<String> = healthy.iter().map(|(h, _)| h.clone()).collect();
     order.extend(degraded.iter().cloned());
@@ -934,6 +942,19 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
         *cache = (Instant::now(), order.clone());
     }
     order
+}
+
+/// Only the configured nodes that currently complete the hbbs handshake,
+/// fastest first. Empty when the check does not apply or nothing is reachable,
+/// so the caller can fall back to the full configured list.
+pub async fn rendezvous_live_servers() -> Vec<String> {
+    let servers = Config::get_rendezvous_servers();
+    if servers.len() < 2 || use_ws() || !rendezvous_failover_enabled() {
+        return Vec::new();
+    }
+    let (mut healthy, _degraded, _down) = probe_all_servers(&servers).await;
+    healthy.sort_by_key(|(_, latency)| *latency);
+    healthy.drain(..).map(|(host, _)| host).collect()
 }
 
 /// Mark a node as unusable right after a failed dial, so the next attempt

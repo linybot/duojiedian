@@ -39,6 +39,8 @@ use crate::{
 
 type Message = RendezvousMessage;
 
+const STANDBY_RETRY_INTERVAL: f64 = 20.0;
+
 const FAST_RETRY_TIMEOUT: u64 = 3_000;
 
 fn connection_meta(
@@ -352,30 +354,54 @@ impl RendezvousMediator {
             {
                 let mut futs = Vec::new();
                 let servers = Config::get_rendezvous_servers();
+                // Multi-node auto failover: with several nodes configured, a node
+                // that is down must not tear the healthy node's registration down.
+                // join_all waits for every host while one failure sets SHOULD_EXIT
+                // for the siblings, which used to drop the live registration every
+                // CONNECT_TIMEOUT. A standby node that is down therefore retries in
+                // its own background loop and never ends the cycle.
+                let live = if servers.len() > 1 {
+                    crate::rendezvous_live_servers().await
+                } else {
+                    Vec::new()
+                };
                 SHOULD_EXIT.store(false, Ordering::SeqCst);
                 MANUAL_RESTARTED.store(false, Ordering::SeqCst);
                 for host in servers.clone() {
                     let server = server.clone();
                     let timeout = timeout.clone();
+                    let standby = !live.is_empty() && !live.contains(&host);
                     futs.push(tokio::spawn(async move {
-                        if let Err(err) = Self::start(server, host).await {
-                            #[cfg(target_os = "macos")]
-                            if crate::platform::is_host_unreachable_error(&err) {
-                                // An app update can briefly invalidate its Local Network policy.
-                                *timeout.write().unwrap() = FAST_RETRY_TIMEOUT;
+                        loop {
+                            if standby && SHOULD_EXIT.load(Ordering::SeqCst) {
+                                return;
                             }
-                            let err = format!("rendezvous mediator error: {err}");
-                            // When user reboot, there might be below error, waiting too long
-                            // (CONNECT_TIMEOUT 18s) will make user think there is bug
-                            if err.contains("10054") || err.contains("11001") {
-                                // No such host is known. (os error 11001)
-                                // An existing connection was forcibly closed by the remote host. (os error 10054): also happens for UDP
-                                *timeout.write().unwrap() = FAST_RETRY_TIMEOUT;
+                            if let Err(err) = Self::start(server.clone(), host.clone()).await {
+                                #[cfg(target_os = "macos")]
+                                if crate::platform::is_host_unreachable_error(&err) {
+                                    // An app update can briefly invalidate its Local Network policy.
+                                    *timeout.write().unwrap() = FAST_RETRY_TIMEOUT;
+                                }
+                                let err = format!("rendezvous mediator error: {err}");
+                                // When user reboot, there might be below error, waiting too long
+                                // (CONNECT_TIMEOUT 18s) will make user think there is bug
+                                if err.contains("10054") || err.contains("11001") {
+                                    // No such host is known. (os error 11001)
+                                    // An existing connection was forcibly closed by the remote host. (os error 10054): also happens for UDP
+                                    *timeout.write().unwrap() = FAST_RETRY_TIMEOUT;
+                                }
+                                log::error!("{err}");
+                                if standby {
+                                    // Standby node: wait for it to come back, the
+                                    // healthy node keeps its registration meanwhile.
+                                    sleep(STANDBY_RETRY_INTERVAL).await;
+                                    continue;
+                                }
                             }
-                            log::error!("{err}");
+                            // SHOULD_EXIT here is to ensure once one exits, the others also exit.
+                            SHOULD_EXIT.store(true, Ordering::SeqCst);
+                            return;
                         }
-                        // SHOULD_EXIT here is to ensure once one exits, the others also exit.
-                        SHOULD_EXIT.store(true, Ordering::SeqCst);
                     }));
                 }
                 join_all(futs).await;
