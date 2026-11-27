@@ -940,9 +940,12 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     // The node that accepted the account login is the next hint: every hbbs
     // keeps its own account database, so a signed-in controller only stays
     // signed in while it dials that node.
+    // The account pin comes first: a signed-in controller must dial the node
+    // that owns its account, even when `custom-rendezvous-server` still holds a
+    // node picked before the login.
     for preferred in [
-        normalize_node(&get_option("custom-rendezvous-server".to_owned())),
         account_node_pin(),
+        normalize_node(&get_option("custom-rendezvous-server".to_owned())),
     ] {
         if preferred.is_empty() {
             continue;
@@ -1949,13 +1952,14 @@ fn get_api_server_(api: String, custom: String) -> String {
         return api.to_owned();
     }
     let s0 = {
-        let custom = get_custom_rendezvous_server(custom);
-        if custom.is_empty() {
-            // A signed-in controller has to talk to the node that owns the
-            // account, not to whichever node happens to be fastest.
-            account_node_pin()
+        // A signed-in controller has to talk to the node that owns the
+        // account, not to whichever node happens to be fastest or was picked
+        // before the login.
+        let pin = account_node_pin();
+        if !pin.is_empty() {
+            pin
         } else {
-            custom
+            get_custom_rendezvous_server(custom)
         }
     };
     if !s0.is_empty() {
