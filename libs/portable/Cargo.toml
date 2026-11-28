@@ -1,6 +1,6 @@
 [package]
 name = "linybot-portable-packer"
-version = "1.7.1"
+version = "1.7.2"
 edition = "2021"
 description = "Linybot Remote Desktop"
 
