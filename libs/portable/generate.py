@@ -88,6 +88,12 @@ def build_portable(output_folder: str, target: str):
     current_dir = os.getcwd()
     try:
         os.chdir(output_folder)
+        # include_bytes! reads data.bin at compile time; an empty or missing blob
+        # silently produces a payload-less stub, so verify it before building.
+        blob = os.path.join(output_folder, "data.bin")
+        if not os.path.isfile(blob) or os.path.getsize(blob) < 5000000:
+            raise RuntimeError(
+                f"payload blob {blob} is missing or too small to be embedded")
         # data.bin is embedded with include_bytes!, so a cached artifact from a build
         # with a different (or missing) payload must never be reused: drop this
         # package's artifacts before rebuilding.
