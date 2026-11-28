@@ -150,8 +150,10 @@ void runMainApp(bool startService) async {
   }
 
   // Set window option.
+  // [duojiedian] Skip the taskbar button for the main window as well; the app
+  // stays reachable from its tray icon only.
   WindowOptions windowOptions = getHiddenTitleBarWindowOptions(
-      isMainWindow: true, alwaysOnTop: alwaysOnTop);
+      isMainWindow: true, alwaysOnTop: alwaysOnTop, skipTaskbar: true);
   windowManager.waitUntilReadyToShow(windowOptions, () async {
     // Restore the location of the main window before window hide or show.
     await restoreWindowPosition(WindowType.Main);

@@ -179,7 +179,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   } else {
     window_title = app_name;
   }
-  if (!window.CreateAndShow(window_title, origin, size, !is_cm_page)) {
+  // [duojiedian] Never create a taskbar button for any window (main window or
+  // connection manager); the app is driven from its tray icon.
+  if (!window.CreateAndShow(window_title, origin, size, false)) {
       return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

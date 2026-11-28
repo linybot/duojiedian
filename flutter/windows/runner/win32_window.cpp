@@ -183,12 +183,17 @@ bool Win32Window::CreateAndShow(const std::wstring& title,
   }
 
   if (!showOnTaskBar) {
+    // [duojiedian] Mark the window as a tool window so a later ShowWindow()
+    // cannot re-create a taskbar button or Alt+Tab entry.
+    LONG_PTR ex_style = ::GetWindowLongPtr(window, GWL_EXSTYLE);
+    ex_style = (ex_style | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW;
+    ::SetWindowLongPtr(window, GWL_EXSTYLE, ex_style);
     // hide from taskbar
     HRESULT hr;
     ITaskbarList* pTaskbarList;
     hr = CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_INPROC_SERVER,IID_ITaskbarList,(void**)&pTaskbarList);
     if (FAILED(hr)) {
-        return false;
+        return OnCreate();
     }
     hr = pTaskbarList->HrInit();
     hr = pTaskbarList->DeleteTab(window);
