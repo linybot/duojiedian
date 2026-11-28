@@ -510,7 +510,7 @@ jobs:
         # cannot rewrite a truncated placeholder, leaving short names pointing at it.
         #
         # It still has to be unique, which is why "Linybot" itself cannot be used:
-        # it also names payload that must never be renamed, such as liblinybot.dll
+        # it also names payload that must never be renamed, such as linybot.dll
         # and drivers\LinybotPrinterDriver.
         #
         #

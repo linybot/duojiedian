@@ -103,9 +103,9 @@ endif()
 # flutter_rust_bridge
 set(LINYBOT_LIB_BUILD_TYPE $<IF:$<CONFIG:Debug>,debug,release>)
 message(STATUS "linybot lib build type: ${LINYBOT_LIB_BUILD_TYPE}")
-set(LINYBOT_LIB "../../target/${LINYBOT_LIB_BUILD_TYPE}/liblinybot.dll")
+set(LINYBOT_LIB "../../target/${LINYBOT_LIB_BUILD_TYPE}/linybot.dll")
 install(FILES "${LINYBOT_LIB}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-COMPONENT Runtime RENAME liblinybot.dll)
+COMPONENT Runtime RENAME linybot.dll)
 
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.

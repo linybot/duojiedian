@@ -142,7 +142,7 @@ class PlatformFFI {
         : isLinux
             ? _openLinuxCoreLib()
             : isWindows
-                ? DynamicLibrary.open('liblinybot.dll')
+                ? DynamicLibrary.open('linybot.dll')
                 :
                 // Use executable itself as the dynamic library for MacOS.
                 // Multiple dylib instances will cause some global instances to be invalid.

@@ -303,7 +303,7 @@ class UserModel {
     // hold the account is not mistaken for a broken client.
     final detail = failures.join(' / ');
     throw credentialError != null
-        ? RequestException(credentialError.code,
+        ? RequestException(credentialError.statusCode,
             detail.isNotEmpty ? detail : credentialError.cause)
         : RequestException(0, detail.isNotEmpty ? detail : 'login failed');
   }

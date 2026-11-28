@@ -27,10 +27,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (auto result = service_control::HandleCommand(command_line)) {
     return static_cast<int>(*result);
   }
-  HINSTANCE hInstance = LoadLibraryA("liblinybot.dll");
+  HINSTANCE hInstance = LoadLibraryA("linybot.dll");
   if (!hInstance)
   {
-    std::cout << "Failed to load liblinybot.dll." << std::endl;
+    std::cout << "Failed to load linybot.dll." << std::endl;
     return EXIT_FAILURE;
   }
   FUNC_LINYBOT_CORE_MAIN linybot_core_main =

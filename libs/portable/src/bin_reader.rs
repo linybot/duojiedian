@@ -320,7 +320,7 @@ mod tests {
         let embedded = parse(blob(
             &[
                 ("./data/flutter_assets/assets/icon.ico", b"stock-icon"),
-                ("./liblinybot.dll", b"core"),
+                ("./linybot.dll", b"core"),
             ],
             "./linybot.exe",
         ))
@@ -350,6 +350,6 @@ mod tests {
                 .count(),
             1
         );
-        assert_eq!(entry(&files, "./liblinybot.dll").unwrap().raw, b"core");
+        assert_eq!(entry(&files, "./linybot.dll").unwrap().raw, b"core");
     }
 }
