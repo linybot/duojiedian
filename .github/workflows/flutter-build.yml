@@ -53,7 +53,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.7.6"
+  VERSION: "1.7.7"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -473,14 +473,15 @@ jobs:
           rm -f ./target/release/linybot-portable-packer.exe ./libs/portable/target/release/linybot-portable-packer.exe
           pushd ./libs/portable
           pip3 install -r requirements.txt
+          # Build the packer in a dedicated target dir so the artifact can never be
+          # confused with (or shadowed by) a cached stub in the workspace target/.
+          export CARGO_TARGET_DIR="$PWD/target"
           python3 ./generate.py -f ../../linybot/ -o . -e ../../linybot/linybot.exe
           ls -l data.bin
           popd
-          # Cargo writes the packer either to the workspace target/ or to
-          # libs/portable/target/; take the largest (i.e. payload-carrying) build.
           PACKER=""
           BEST=0
-          for p in ./target/release/linybot-portable-packer.exe ./libs/portable/target/release/linybot-portable-packer.exe; do
+          for p in ./libs/portable/target/release/linybot-portable-packer.exe ./target/release/linybot-portable-packer.exe; do
             [ -f "$p" ] || continue
             s=$(stat -c%s "$p")
             echo "packer candidate $p -> $s bytes"
@@ -788,12 +789,13 @@ jobs:
           rm -f ./target/release/linybot-portable-packer.exe ./libs/portable/target/release/linybot-portable-packer.exe
           pushd ./libs/portable
           pip3 install -r requirements.txt
+          export CARGO_TARGET_DIR="$PWD/target"
           python3 ./generate.py -f ../../Release/ -o . -e ../../Release/linybot.exe
           ls -l data.bin
           popd
           PACKER=""
           BEST=0
-          for p in ./target/release/linybot-portable-packer.exe ./libs/portable/target/release/linybot-portable-packer.exe; do
+          for p in ./libs/portable/target/release/linybot-portable-packer.exe ./target/release/linybot-portable-packer.exe; do
             [ -f "$p" ] || continue
             s=$(stat -c%s "$p")
             echo "packer candidate $p -> $s bytes"

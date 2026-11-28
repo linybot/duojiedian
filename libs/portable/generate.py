@@ -94,6 +94,10 @@ def build_portable(output_folder: str, target: str):
         if not os.path.isfile(blob) or os.path.getsize(blob) < 5000000:
             raise RuntimeError(
                 f"payload blob {blob} is missing or too small to be embedded")
+        print(f"embedding payload: {blob} ({os.path.getsize(blob)} bytes)",
+              flush=True)
+        print(f"cargo target dir: {os.environ.get('CARGO_TARGET_DIR', '<workspace default>')}",
+              flush=True)
         # data.bin is embedded with include_bytes!, so a cached artifact from a build
         # with a different (or missing) payload must never be reused: drop this
         # package's artifacts before rebuilding.
@@ -104,7 +108,9 @@ def build_portable(output_folder: str, target: str):
         cmd = ["cargo", "build", "--locked", "--release"]
         if target:
             cmd.extend(["--target", target])
-        subprocess.run(cmd, check=True)
+        # Force every line through immediately so the log keeps the real order of
+        # "payload written" / "packer compiled", which is what the size guard needs.
+        subprocess.run(cmd, check=True, env={**os.environ, "CARGO_TERM_COLOR": "never"})
     finally:
         os.chdir(current_dir)
 
