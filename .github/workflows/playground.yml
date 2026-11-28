@@ -17,7 +17,7 @@ env:
   TAG_NAME: "nightly"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
-  VERSION: "1.7.0"
+  VERSION: "1.7.1"
   NDK_VERSION: "r26d"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -353,12 +353,12 @@ jobs:
             aarch64-linux-android)
               ./flutter/ndk_arm64.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
             ;;
             armv7-linux-androideabi)
               ./flutter/ndk_arm.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
             ;;
           esac
 
@@ -374,7 +374,7 @@ jobs:
             aarch64-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
               # build flutter
               pushd flutter
               flutter build apk --release --target-platform android-arm64 --split-per-abi
@@ -383,7 +383,7 @@ jobs:
             armv7-linux-androideabi)
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
               # build flutter
               pushd flutter
               flutter build apk --release --target-platform android-arm --split-per-abi

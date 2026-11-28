@@ -21,11 +21,11 @@ Linybot to wieloplatformowe oprogramowanie do zdalnego pulpitu, napisane w języ
 
 Linybot zaprasza do współpracy każdego. Zobacz [`docs/CONTRIBUTING-PL.md`](CONTRIBUTING-PL.md) pomoc w uruchomieniu programu.
 
-[**PYTANIA I ODPOWIEDZI (FAQ)**](https://github.com/rustdesk/linybot/wiki/FAQ)
+[**PYTANIA I ODPOWIEDZI (FAQ)**](https://github.com/linybot/duojiedian/wiki/FAQ)
 
-[**POBIERANIE BINARIÓW**](https://github.com/rustdesk/linybot/releases)
+[**POBIERANIE BINARIÓW**](https://github.com/linybot/duojiedian/releases)
 
-[**WERSJE TESTOWE (NIGHTLY)**](https://github.com/rustdesk/linybot/releases/tag/nightly)
+[**WERSJE TESTOWE (NIGHTLY)**](https://github.com/linybot/duojiedian/releases/tag/nightly)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
     alt="Get it on F-Droid"
@@ -106,7 +106,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -119,7 +119,7 @@ cargo run
 Rozpocznij od sklonowania repozytorium i stworzenia kontenera docker:
 
 ```sh
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 docker build -t "rustdesk-builder" .
 ```
@@ -147,14 +147,14 @@ Upewnij się, że uruchamiasz te polecenia z katalogu głównego repozytorium Li
 ## Struktura plików
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: kodek wideo, konfiguracja, obsługa tcp/udp, protobuf, funkcje systemu plików do transferu plików i kilka innych funkcji użytkowych
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: przechwytywanie ekranu
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: specyficzne dla danej platformy sterowanie klawiaturą/myszą
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: GUI
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: audio/schowek/wejście(input)/wideo oraz połączenia sieciowe
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: uruchamia połączenie bezpośrednie
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: Komunikacja z [rustdesk-server](https://github.com/rustdesk/rustdesk-server), czekanie na bezpośrednie (odpytywanie TCP) lub przekazywane połączenie
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: kod specyficzny dla danej platformy
-- **[flutter](https://github.com/rustdesk/linybot/tree/master/flutter)**: kod Flutter dla urządzeń mobilnych
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: przechwytywanie ekranu
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: specyficzne dla danej platformy sterowanie klawiaturą/myszą
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: GUI
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: audio/schowek/wejście(input)/wideo oraz połączenia sieciowe
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: uruchamia połączenie bezpośrednie
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: Komunikacja z [rustdesk-server](https://github.com/rustdesk/rustdesk-server), czekanie na bezpośrednie (odpytywanie TCP) lub przekazywane połączenie
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: kod specyficzny dla danej platformy
+- **[flutter](https://github.com/linybot/duojiedian/tree/master/flutter)**: kod Flutter dla urządzeń mobilnych
 
 ## Zrzuty ekranu
 

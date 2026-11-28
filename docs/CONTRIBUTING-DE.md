@@ -43,7 +43,7 @@ Spezifische Git-Anweisungen finden Sie im [GitHub-Workflow](https://github.com/s
 
 ## Verhalten
 
-https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/linybot/duojiedian/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## Kommunikation
 

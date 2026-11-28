@@ -24,11 +24,11 @@
 
 Linybot 期待各位的贡献. 如何参与开发? 详情请看 [CONTRIBUTING-ZH.md](CONTRIBUTING-ZH.md).
 
-[**FAQ**](https://github.com/rustdesk/linybot/wiki/FAQ)
+[**FAQ**](https://github.com/linybot/duojiedian/wiki/FAQ)
 
-[**BINARY DOWNLOAD**](https://github.com/rustdesk/linybot/releases)
+[**BINARY DOWNLOAD**](https://github.com/linybot/duojiedian/releases)
 
-[**NIGHTLY BUILD**](https://github.com/rustdesk/linybot/releases/tag/nightly)
+[**NIGHTLY BUILD**](https://github.com/linybot/duojiedian/releases/tag/nightly)
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
     alt="Get it on F-Droid"
@@ -36,7 +36,7 @@ Linybot 期待各位的贡献. 如何参与开发? 详情请看 [CONTRIBUTING-ZH
 
 ## 依赖
 
-桌面版本使用 Flutter 或 Sciter（已弃用）作为 GUI，本教程仅适用于 Sciter，因为它更简单且更易于上手。查看我们的[CI](https://github.com/rustdesk/linybot/blob/master/.github/workflows/flutter-build.yml)以构建 Flutter 版本。
+桌面版本使用 Flutter 或 Sciter（已弃用）作为 GUI，本教程仅适用于 Sciter，因为它更简单且更易于上手。查看我们的[CI](https://github.com/linybot/duojiedian/blob/master/.github/workflows/flutter-build.yml)以构建 Flutter 版本。
 
 请自行下载Sciter动态库。
 
@@ -115,7 +115,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -128,7 +128,7 @@ VCPKG_ROOT=$HOME/vcpkg cargo run
 克隆版本库并构建 Docker 容器:
 
 ```sh
-git clone https://github.com/rustdesk/linybot # 克隆Github存储库
+git clone https://github.com/linybot/duojiedian # 克隆Github存储库
 cd linybot # 进入文件夹
 docker build -t "rustdesk-builder" . # 构建容器
 ```
@@ -211,16 +211,16 @@ target/release/linybot
 ## 文件结构
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: 视频编解码, 配置, tcp/udp 封装, 以及其他与服务端共享的实用函数
-- **[libs/base](https://github.com/rustdesk/linybot/tree/master/libs/base)**: 仅供本应用使用的 protobuf, 文件传输相关文件系统操作函数, 键盘及平台相关代码
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: 屏幕截取
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: 平台相关的鼠标键盘输入
-- **[libs/clipboard](https://github.com/rustdesk/linybot/tree/master/libs/clipboard)**: Windows、Linux、macOS 的文件复制和粘贴实现
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: 过时的 Sciter UI（已弃用）
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: 被控端服务音频、剪切板、输入、视频服务、网络连接的实现
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: 控制端
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: 与[rustdesk-server](https://github.com/rustdesk/rustdesk-server)保持UDP通讯, 等待远程连接（通过打洞直连或者中继）
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: 平台服务相关代码
-- **[flutter](https://github.com/rustdesk/linybot/tree/master/flutter)**: 适用于桌面和移动设备的 Flutter 代码
+- **[libs/base](https://github.com/linybot/duojiedian/tree/master/libs/base)**: 仅供本应用使用的 protobuf, 文件传输相关文件系统操作函数, 键盘及平台相关代码
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: 屏幕截取
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: 平台相关的鼠标键盘输入
+- **[libs/clipboard](https://github.com/linybot/duojiedian/tree/master/libs/clipboard)**: Windows、Linux、macOS 的文件复制和粘贴实现
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: 过时的 Sciter UI（已弃用）
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: 被控端服务音频、剪切板、输入、视频服务、网络连接的实现
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: 控制端
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: 与[rustdesk-server](https://github.com/rustdesk/rustdesk-server)保持UDP通讯, 等待远程连接（通过打洞直连或者中继）
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: 平台服务相关代码
+- **[flutter](https://github.com/linybot/duojiedian/tree/master/flutter)**: 适用于桌面和移动设备的 Flutter 代码
 
 ## 截图
 

@@ -5,7 +5,7 @@
   <a href="#структура-файлов">Структура файлов</a> •
   <a href="#скриншоты">Скриншоты</a><br>
   [<a href="../README.md">English</a>] | [<a href="README-UA.md">Українська</a>] | [<a href="README-CS.md">česky</a>] | [<a href="README-ZH.md">中文</a>] | [<a href="README-HU.md">Magyar</a>] | [<a href="README-ES.md">Español</a>] | [<a href="README-FA.md">فارسی</a>] | [<a href="README-FR.md">Français</a>] | [<a href="README-DE.md">Deutsch</a>] | [<a href="README-PL.md">Polski</a>] | [<a href="README-ID.md">Indonesian</a>] | [<a href="README-FI.md">Suomi</a>] | [<a href="README-ML.md">മലയാളം</a>] | [<a href="README-JP.md">日本語</a>] | [<a href="README-NL.md">Nederlands</a>] | [<a href="README-IT.md">Italiano</a>] | [<a href="README-PTPT.md">Português (Portugal)</a>] | [<a href="README-PTBR.md">Português (Brasil)</a>] | [<a href="README-EO.md">Esperanto</a>] | [<a href="README-KR.md">한국어</a>] | [<a href="README-AR.md">العربي</a>] | [<a href="README-VN.md">Tiếng Việt</a>] | [<a href="README-DA.md">Dansk</a>] | [<a href="README-GR.md">Ελληνικά</a>] | [<a href="README-TR.md">Türkçe</a>] | [<a href="README-NO.md">Norsk</a>] | [<a href="README-RO.md">Română</a>]<br>
-  <b>Нам нужна ваша помощь в переводе этого README, <a href="https://github.com/rustdesk/linybot/tree/master/src/lang">интерфейса Linybot</a>
+  <b>Нам нужна ваша помощь в переводе этого README, <a href="https://github.com/linybot/duojiedian/tree/master/src/lang">интерфейса Linybot</a>
      и <a href="https://github.com/rustdesk/doc.rustdesk.com">документации Linybot</a> на ваш родной язык.</b>
 </p>
 
@@ -23,13 +23,13 @@
 
 Linybot приветствует вклад каждого. Ознакомьтесь с [`docs/CONTRIBUTING-RU.md`](CONTRIBUTING-RU.md) в начале работы для понимания.
 
-[**Как работает Linybot?**](https://github.com/rustdesk/linybot/wiki/How-does-Linybot-work%3F) (Документация на английском языке)
+[**Как работает Linybot?**](https://github.com/linybot/duojiedian/wiki/How-does-Linybot-work%3F) (Документация на английском языке)
 
-[**Часто задаваемые вопросы**](https://github.com/rustdesk/linybot/wiki/FAQ) (Страница на английском языке)
+[**Часто задаваемые вопросы**](https://github.com/linybot/duojiedian/wiki/FAQ) (Страница на английском языке)
 
-[**СКАЧАТЬ ПРИЛОЖЕНИЕ**](https://github.com/rustdesk/linybot/releases)
+[**СКАЧАТЬ ПРИЛОЖЕНИЕ**](https://github.com/linybot/duojiedian/releases)
 
-[**НОЧНЫЕ СБОРКИ (Актуальные)**](https://github.com/rustdesk/linybot/releases/tag/nightly)
+[**НОЧНЫЕ СБОРКИ (Актуальные)**](https://github.com/linybot/duojiedian/releases/tag/nightly)
 
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid"
@@ -40,7 +40,7 @@ Linybot приветствует вклад каждого. Ознакомьте
 
 ## Зависимости
 
-Для ПК-версии используются библиотеки Flutter или Sciter (устаревшее) для графического интерфейса. Данное руководство подразумевает работу с Sciter, так как он более простой в использовании и с ним легче начать работу. Вы можете также посмотреть на механизм нашего [CI](https://github.com/rustdesk/linybot/blob/master/.github/workflows/flutter-build.yml) для сборок на Flutter.
+Для ПК-версии используются библиотеки Flutter или Sciter (устаревшее) для графического интерфейса. Данное руководство подразумевает работу с Sciter, так как он более простой в использовании и с ним легче начать работу. Вы можете также посмотреть на механизм нашего [CI](https://github.com/linybot/duojiedian/blob/master/.github/workflows/flutter-build.yml) для сборок на Flutter.
 
 Загрузите динамическую библиотеку Sciter самостоятельно.
 
@@ -119,7 +119,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone --recurse-submodules https://github.com/rustdesk/linybot
+git clone --recurse-submodules https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -132,7 +132,7 @@ VCPKG_ROOT=$HOME/vcpkg cargo run
 Начните с клонирования репозитория и создания docker-контейнера:
 
 ```sh
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 git submodule update --init --recursive
 docker build -t "rustdesk-builder" .
@@ -161,23 +161,23 @@ target/release/linybot
 ## Структура файлов
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: видеокодек, конфигурация, враппер TCP/UDP и некоторые другие служебные функции, общие с сервером
-- **[libs/base](https://github.com/rustdesk/linybot/tree/master/libs/base)**: protobuf, функции файловой системы для передачи файлов, код для клавиатуры и платформ, который используется только этим приложением
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: захват экрана
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: специфичное для платформы управление клавиатурой/мышью
-- **[libs/clipboard](https://github.com/rustdesk/linybot/tree/master/libs/clipboard)**: функционал буфера обмена файлами для Windows, Linux, и macOS
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: графический пользовательский интерфейс на Sciter (устаревшее)
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: сервисы аудио, буфера обмена, ввода, видео и сетевых подключений
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: одноранговое соединение
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: связь с [сервером Linybot](https://github.com/rustdesk/rustdesk-server), ожидает удаленного прямого (через TCP hole punching) или ретранслируемого соединения
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: специфичный для платформы код
-- **[flutter](https://github.com/rustdesk/linybot/tree/master/flutter)**: код Flutter для ПК-версии и мобильных устройств
+- **[libs/base](https://github.com/linybot/duojiedian/tree/master/libs/base)**: protobuf, функции файловой системы для передачи файлов, код для клавиатуры и платформ, который используется только этим приложением
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: захват экрана
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: специфичное для платформы управление клавиатурой/мышью
+- **[libs/clipboard](https://github.com/linybot/duojiedian/tree/master/libs/clipboard)**: функционал буфера обмена файлами для Windows, Linux, и macOS
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: графический пользовательский интерфейс на Sciter (устаревшее)
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: сервисы аудио, буфера обмена, ввода, видео и сетевых подключений
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: одноранговое соединение
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: связь с [сервером Linybot](https://github.com/rustdesk/rustdesk-server), ожидает удаленного прямого (через TCP hole punching) или ретранслируемого соединения
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: специфичный для платформы код
+- **[flutter](https://github.com/linybot/duojiedian/tree/master/flutter)**: код Flutter для ПК-версии и мобильных устройств
 
 ## Скриншоты
 
-![Менеджер соединений](https://github.com/rustdesk/linybot/assets/28412477/db82d4e7-c4bc-4823-8e6f-6af7eadf7651)
+![Менеджер соединений](https://github.com/linybot/duojiedian/assets/28412477/db82d4e7-c4bc-4823-8e6f-6af7eadf7651)
 
-![Подключение к удалённому рабочему столу на Windows](https://github.com/rustdesk/linybot/assets/28412477/9baa91e9-3362-4d06-aa1a-7518edcbd7ea)
+![Подключение к удалённому рабочему столу на Windows](https://github.com/linybot/duojiedian/assets/28412477/9baa91e9-3362-4d06-aa1a-7518edcbd7ea)
 
-![Передача файлов](https://github.com/rustdesk/linybot/assets/28412477/39511ad3-aa9a-4f8c-8947-1cce286a46ad)
+![Передача файлов](https://github.com/linybot/duojiedian/assets/28412477/39511ad3-aa9a-4f8c-8947-1cce286a46ad)
 
-![TCP-туннелирование](https://github.com/rustdesk/linybot/assets/28412477/78e8708f-e87e-4570-8373-1360033ea6c5)
+![TCP-туннелирование](https://github.com/linybot/duojiedian/assets/28412477/78e8708f-e87e-4570-8373-1360033ea6c5)

@@ -39,7 +39,7 @@ For spesefike git instruksjoner, se [GitHub workflow 101](https://github.com/ser
 
 ## Oppførsel
 
-https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/linybot/duojiedian/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## Kommunikasjon
 

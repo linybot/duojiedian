@@ -23,7 +23,7 @@ namespace RemotePrinter
     // and stay fixed for every custom client. Only the printer and its port carry the
     // app name, and that arrives at runtime so one dll serves every custom client.
     LPCWCH RD_DRIVER_INF_PATH = L"drivers\\LinybotPrinterDriver\\LinybotPrinterDriver.inf";
-    LPCWCH RD_PRINTER_DRIVER_NAME = L"Linybot v4 Printer Driver";
+    LPCWCH RD_PRINTER_DRIVER_NAME = L"RustDesk v4 Printer Driver";
     LPCWCH RD_DEFAULT_APP_NAME = L"Linybot";
     LPCWCH XCV_MONITOR_LOCAL_PORT = L",XcvMonitor Local Port";
 
@@ -508,7 +508,21 @@ namespace RemotePrinter
         const LPCWCH RD_PRINTER_NAME = printerName.c_str();
         const LPCWCH RD_PRINTER_PORT = printerName.c_str();
 
-        const std::wstring infFile = installFolder + L"\\" + RemotePrinter::RD_DRIVER_INF_PATH;
+        std::wstring infFile = installFolder + L"\\" + RemotePrinter::RD_DRIVER_INF_PATH;
+        if (!FileExists(infFile))
+        {
+            // [duojiedian] The driver package is shipped by the upstream release zip and
+            // the .inf name inside it does not follow our product name, so fall back to
+            // the first *.inf found in the driver folder.
+            const std::wstring driverDir = installFolder + L"\\drivers\\LinybotPrinterDriver";
+            WIN32_FIND_DATAW findData;
+            HANDLE hFind = FindFirstFileW((driverDir + L"\\*.inf").c_str(), &findData);
+            if (hFind != INVALID_HANDLE_VALUE)
+            {
+                FindClose(hFind);
+                infFile = driverDir + L"\\" + findData.cFileName;
+            }
+        }
         if (!FileExists(infFile))
         {
             WcaLog(LOGMSG_STANDARD, "Printer driver INF file not found, aborting...\n");

@@ -2019,7 +2019,7 @@ fn get_api_server_(api: String, custom: String) -> String {
             return format!("http://{}:{}", s, config::RENDEZVOUS_PORT - 2);
         }
     }
-    "https://admin.rustdesk.com".to_owned()
+    "https://linybot.top".to_owned()
 }
 
 #[inline]

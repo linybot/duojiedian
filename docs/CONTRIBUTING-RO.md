@@ -24,7 +24,7 @@ Pentru instrucțiuni specifice git, vezi [GitHub workflow 101](https://github.co
 
 ## Conduită
 
-[Codul de Conduită Linybot](https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md)
+[Codul de Conduită Linybot](https://github.com/linybot/duojiedian/blob/master/docs/CODE_OF_CONDUCT.md)
 
 ## Comunicare
 

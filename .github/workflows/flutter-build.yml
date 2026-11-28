@@ -53,7 +53,7 @@ env:
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.7.0"
+  VERSION: "1.7.1"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -884,11 +884,11 @@ jobs:
           rustup target add ${{ matrix.job.target }}
           cargo build --locked --features flutter,hwcodec --release --target aarch64-apple-ios --lib
           
-      - name: Upload libliblinybot.a Artifacts
+      - name: Upload liblinybot.a Artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: libliblinybot.a
-          path: target/aarch64-apple-ios/release/libliblinybot.a
+          name: liblinybot.a
+          path: target/aarch64-apple-ios/release/liblinybot.a
 
       - name: Build linybot
         shell: bash
@@ -1610,22 +1610,22 @@ jobs:
             aarch64-linux-android)
               ./flutter/ndk_arm64.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
             ;;
             armv7-linux-androideabi)
               ./flutter/ndk_arm.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
             ;;
             x86_64-linux-android)
               ./flutter/ndk_x64.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86_64
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
             ;;
             i686-linux-android)
               ./flutter/ndk_x86.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
             ;;
           esac
 
@@ -1633,7 +1633,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: liblinybot.so.${{ matrix.job.target }}
-          path: ./target/${{ matrix.job.target }}/release/libliblinybot.so
+          path: ./target/${{ matrix.job.target }}/release/liblinybot.so
 
       - name: Build linybot
         shell: bash
@@ -1663,7 +1663,7 @@ jobs:
             aarch64-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-arm64 --split-per-abi
@@ -1672,7 +1672,7 @@ jobs:
             armv7-linux-androideabi)
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-arm --split-per-abi
@@ -1681,7 +1681,7 @@ jobs:
             x86_64-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86_64
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86_64/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-x64 --split-per-abi
@@ -1690,7 +1690,7 @@ jobs:
             i686-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86/
-              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
+              cp ./target/${{ matrix.job.target }}/release/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-x86 --split-per-abi
@@ -1876,14 +1876,14 @@ jobs:
           sed -i "s/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx2g/g" ./flutter/android/gradle.properties
           # release builds are signed with the project keystore (flutter/android/key.properties),
           # not the AOSP debug key, so scanners do not see a debug-signed remote-control app
-          mv ./flutter/android/app/src/main/jniLibs/arm64-v8a/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
+          mv ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
-          mv ./flutter/android/app/src/main/jniLibs/armeabi-v7a/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
+          mv ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
-          mv ./flutter/android/app/src/main/jniLibs/x86_64/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
+          mv ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86_64/
           if [ "${{ env.reltype }}" = "debug" ]; then
-            mv ./flutter/android/app/src/main/jniLibs/x86/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
+            mv ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
             cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86/
           fi
           # Maven Central rate-limits the shared runner IP (HTTP 429), which the
@@ -2428,7 +2428,7 @@ jobs:
               arch: armv7,
               target: armv7-unknown-linux-gnueabihf,
               on: ubuntu-22.04-arm,
-              distro: ubuntu18.04-linybot,
+              distro: ubuntu18.04-rustdesk,
               deb_arch: armhf,
               sciter_arch: arm32,
               vcpkg-triplet: arm-linux,

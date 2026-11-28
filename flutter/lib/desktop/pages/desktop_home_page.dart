@@ -516,21 +516,21 @@ class _DesktopHomePageState extends State<DesktopHomePage>
               marginTop: LinuxCards.isEmpty ? 20.0 : 5.0,
               help: 'Help',
               link: currentIsWayland
-                  ? 'https://rustdesk.com/docs/en/client/linux/#x11-required'
-                  : 'https://rustdesk.com/docs/en/client/linux/#login-screen'));
+                  ? 'https://linybot.top/docs/en/client/linux/#x11-required'
+                  : 'https://linybot.top/docs/en/client/linux/#login-screen'));
         }
       } else if (bind.mainCurrentIsWayland()) {
         LinuxCards.add(buildInstallCard(
             "Warning", "wayland_experiment_tip", "", () async {},
             marginTop: LinuxCards.isEmpty ? 20.0 : 5.0,
             help: 'Help',
-            link: 'https://rustdesk.com/docs/en/client/linux/#x11-required'));
+            link: 'https://linybot.top/docs/en/client/linux/#x11-required'));
       } else if (bind.mainIsLoginWayland()) {
         LinuxCards.add(buildInstallCard("Warning",
             "Login screen using Wayland is not supported", "", () async {},
             marginTop: LinuxCards.isEmpty ? 20.0 : 5.0,
             help: 'Help',
-            link: 'https://rustdesk.com/docs/en/client/linux/#login-screen'));
+            link: 'https://linybot.top/docs/en/client/linux/#login-screen'));
       }
       if (LinuxCards.isNotEmpty) {
         return Column(

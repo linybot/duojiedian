@@ -34,7 +34,7 @@ Linybot またはその依存関係へのコントリビュートは、GitHub �
 
 ## 行動規範
 
-https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/linybot/duojiedian/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## コミュニケーション
 

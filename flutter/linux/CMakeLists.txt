@@ -189,7 +189,7 @@ set(LINYBOT_LIB_BUILD_TYPE $<IF:$<CONFIG:Debug>,debug,release>)
 string(TOLOWER ${CMAKE_BUILD_TYPE} ${LINYBOT_LIB_BUILD_TYPE})
 message(STATUS "linybot lib build type: ${LINYBOT_LIB_BUILD_TYPE}")
 
-set(LINYBOT_LIB "../../target/${LINYBOT_LIB_BUILD_TYPE}/libliblinybot.so")
+set(LINYBOT_LIB "../../target/${LINYBOT_LIB_BUILD_TYPE}/liblinybot.so")
 install(FILES "${LINYBOT_LIB}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
 COMPONENT Runtime RENAME liblinybot.so)
 

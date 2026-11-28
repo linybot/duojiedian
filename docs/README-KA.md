@@ -5,7 +5,7 @@
   <a href="#ფაილების-სტრუქტურა">სტრუქტურა</a> •
   <a href="#ეკრანის-სურათები">ეკრანის სურათები</a><br>
   [<a href="../README.md">English</a>] | [<a href="README-UA.md">Українська</a>] | [<a href="README-CS.md">česky</a>] | [<a href="README-ZH.md">中文</a>] | [<a href="README-HU.md">Magyar</a>] | [<a href="README-ES.md">Español</a>] | [<a href="README-FA.md">فارسی</a>] | [<a href="README-FR.md">Français</a>] | [<a href="README-DE.md">Deutsch</a>] | [<a href="README-PL.md">Polski</a>] | [<a href="README-ID.md">Indonesian</a>] | [<a href="README-FI.md">Suomi</a>] | [<a href="README-ML.md">മലയാളം</a>] | [<a href="README-JP.md">日本語</a>] | [<a href="README-NL.md">Nederlands</a>] | [<a href="README-IT.md">Italiano</a>] | [<a href="README-RU.md">Русский</a>] | [<a href="README-PTPT.md">Português (Portugal)</a>] | [<a href="README-PTBR.md">Português (Brasil)</a>] | [<a href="README-EO.md">Esperanto</a>] | [<a href="README-KR.md">한국어</a>] | [<a href="README-AR.md">العربي</a>] | [<a href="README-VN.md">Tiếng Việt</a>] | [<a href="README-DA.md">Dansk</a>] | [<a href="README-GR.md">Ελληνικά</a>] | [<a href="README-TR.md">Türkçe</a>] | [<a href="README-NO.md">Norsk</a>] | [<a href="README-RO.md">Română</a>]<br>
-  <b>გვჭირდება თქვენი დახმარება ამ README-ის, <a href="https://github.com/rustdesk/linybot/tree/master/src/lang">Linybot-ის ინტერფეისისა</a> და <a href="https://github.com/rustdesk/doc.rustdesk.com">Linybot-ის დოკუმენტაციის</a> თქვენს მშობლიურ ენაზე სათარგმნად</b>
+  <b>გვჭირდება თქვენი დახმარება ამ README-ის, <a href="https://github.com/linybot/duojiedian/tree/master/src/lang">Linybot-ის ინტერფეისისა</a> და <a href="https://github.com/rustdesk/doc.rustdesk.com">Linybot-ის დოკუმენტაციის</a> თქვენს მშობლიურ ენაზე სათარგმნად</b>
 </p>
 
 > [!Caution]
@@ -23,11 +23,11 @@
 
 Linybot მიესალმება ყველას წვლილს. დასაწყებად იხილეთ [CONTRIBUTING.md](CONTRIBUTING.md).
 
-[**ხშირად დასმული კითხვები**](https://github.com/rustdesk/linybot/wiki/FAQ)
+[**ხშირად დასმული კითხვები**](https://github.com/linybot/duojiedian/wiki/FAQ)
 
-[**პროგრამის ჩამოტვირთვა**](https://github.com/rustdesk/linybot/releases)
+[**პროგრამის ჩამოტვირთვა**](https://github.com/linybot/duojiedian/releases)
 
-[**ყოველღამეული ანაწყობი**](https://github.com/rustdesk/linybot/releases/tag/nightly)
+[**ყოველღამეული ანაწყობი**](https://github.com/linybot/duojiedian/releases/tag/nightly)
 
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid"
@@ -38,7 +38,7 @@ Linybot მიესალმება ყველას წვლილს. �
 
 ## დამოკიდებულებები
 
-დესკტოპ ვერსიები გრაფიკული ინტერფეისისთვის იყენებს Flutter-ს ან Sciter-ს (მოძველებული). ეს სახელმძღვანელო მხოლოდ Sciter-ს ეხება, რადგან მასთან მუშაობის დაწყება უფრო მარტივი და მოსახერხებელია. Flutter ვერსიის ასაწყობად იხილეთ ჩვენი [CI](https://github.com/rustdesk/linybot/blob/master/.github/workflows/flutter-build.yml).
+დესკტოპ ვერსიები გრაფიკული ინტერფეისისთვის იყენებს Flutter-ს ან Sciter-ს (მოძველებული). ეს სახელმძღვანელო მხოლოდ Sciter-ს ეხება, რადგან მასთან მუშაობის დაწყება უფრო მარტივი და მოსახერხებელია. Flutter ვერსიის ასაწყობად იხილეთ ჩვენი [CI](https://github.com/linybot/duojiedian/blob/master/.github/workflows/flutter-build.yml).
 
 გთხოვთ, Sciter-ის დინამიკური ბიბლიოთეკა თავად ჩამოტვირთოთ.
 
@@ -117,7 +117,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone --recurse-submodules https://github.com/rustdesk/linybot
+git clone --recurse-submodules https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -130,7 +130,7 @@ VCPKG_ROOT=$HOME/vcpkg cargo run
 დაიწყეთ რეპოზიტორიის კლონირებით და Docker-კონტეინერის აწყობით:
 
 ```sh
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 git submodule update --init --recursive
 docker build -t "rustdesk-builder" .
@@ -159,24 +159,24 @@ target/release/linybot
 ## ფაილების სტრუქტურა
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: ვიდეოკოდეკი, კონფიგურაცია, tcp/udp-ის ვრაპერი და სერვერთან გაზიარებული ზოგიერთი სხვა დამხმარე ფუნქცია
-- **[libs/base](https://github.com/rustdesk/linybot/tree/master/libs/base)**: protobuf, ფაილური სისტემის ფუნქციები ფაილების გადასაცემად, კლავიატურისა და პლატფორმის კოდი, რომელსაც მხოლოდ ეს აპლიკაცია იყენებს
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: ეკრანის გადაღება
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: კლავიატურის/მაუსის მართვა კონკრეტული პლატფორმისთვის
-- **[libs/clipboard](https://github.com/rustdesk/linybot/tree/master/libs/clipboard)**: ფაილების კოპირებისა და ჩასმის რეალიზაცია Windows-ის, Linux-ისა და macOS-ისთვის.
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: ძველი Sciter UI (მოძველებული)
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: აუდიოს/გაცვლის ბუფერის/შეყვანის/ვიდეოს სერვისები და ქსელური კავშირები
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: peer-კავშირის დაწყება
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: კავშირი [rustdesk-server](https://github.com/rustdesk/rustdesk-server)-თან, ელოდება დისტანციურ პირდაპირ (TCP hole punching) ან რელეით გადაცემულ კავშირს
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: პლატფორმაზე დამოკიდებული კოდი
-- **[flutter](https://github.com/rustdesk/linybot/tree/master/flutter)**: Flutter-ის კოდი დესკტოპისა და მობილურისთვის
+- **[libs/base](https://github.com/linybot/duojiedian/tree/master/libs/base)**: protobuf, ფაილური სისტემის ფუნქციები ფაილების გადასაცემად, კლავიატურისა და პლატფორმის კოდი, რომელსაც მხოლოდ ეს აპლიკაცია იყენებს
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: ეკრანის გადაღება
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: კლავიატურის/მაუსის მართვა კონკრეტული პლატფორმისთვის
+- **[libs/clipboard](https://github.com/linybot/duojiedian/tree/master/libs/clipboard)**: ფაილების კოპირებისა და ჩასმის რეალიზაცია Windows-ის, Linux-ისა და macOS-ისთვის.
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: ძველი Sciter UI (მოძველებული)
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: აუდიოს/გაცვლის ბუფერის/შეყვანის/ვიდეოს სერვისები და ქსელური კავშირები
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: peer-კავშირის დაწყება
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: კავშირი [rustdesk-server](https://github.com/rustdesk/rustdesk-server)-თან, ელოდება დისტანციურ პირდაპირ (TCP hole punching) ან რელეით გადაცემულ კავშირს
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: პლატფორმაზე დამოკიდებული კოდი
+- **[flutter](https://github.com/linybot/duojiedian/tree/master/flutter)**: Flutter-ის კოდი დესკტოპისა და მობილურისთვის
 
 ## ეკრანის სურათები
 
-![კავშირების მენეჯერი](https://github.com/rustdesk/linybot/assets/28412477/db82d4e7-c4bc-4823-8e6f-6af7eadf7651)
+![კავშირების მენეჯერი](https://github.com/linybot/duojiedian/assets/28412477/db82d4e7-c4bc-4823-8e6f-6af7eadf7651)
 
-![დაკავშირებულია Windows კომპიუტერთან](https://github.com/rustdesk/linybot/assets/28412477/9baa91e9-3362-4d06-aa1a-7518edcbd7ea)
+![დაკავშირებულია Windows კომპიუტერთან](https://github.com/linybot/duojiedian/assets/28412477/9baa91e9-3362-4d06-aa1a-7518edcbd7ea)
 
-![ფაილების გადაცემა](https://github.com/rustdesk/linybot/assets/28412477/39511ad3-aa9a-4f8c-8947-1cce286a46ad)
+![ფაილების გადაცემა](https://github.com/linybot/duojiedian/assets/28412477/39511ad3-aa9a-4f8c-8947-1cce286a46ad)
 
-![TCP ტუნელირება](https://github.com/rustdesk/linybot/assets/28412477/78e8708f-e87e-4570-8373-1360033ea6c5)
+![TCP ტუნელირება](https://github.com/linybot/duojiedian/assets/28412477/78e8708f-e87e-4570-8373-1360033ea6c5)
 

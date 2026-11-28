@@ -22,13 +22,29 @@ fn get_driver_inf_abs_path() -> ResultType<PathBuf> {
             exe_file.to_string_lossy().as_ref()
         ),
     };
-    if !abs_path.exists() {
-        bail!(
-            "The driver inf file \"{}\" does not exists",
-            RD_DRIVER_INF_PATH
-        )
+    if abs_path.exists() {
+        return Ok(abs_path);
     }
-    Ok(abs_path)
+    // [duojiedian] The driver package is shipped by the upstream release zip and the
+    // .inf file name inside it does not necessarily follow our product name. Fall back
+    // to the first *.inf found next to the driver package instead of failing.
+    if let Some(driver_dir) = abs_path.parent() {
+        if let Ok(entries) = std::fs::read_dir(driver_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path
+                    .extension()
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("inf"))
+                {
+                    return Ok(path);
+                }
+            }
+        }
+    }
+    bail!(
+        "The driver inf file \"{}\" does not exists",
+        RD_DRIVER_INF_PATH
+    )
 }
 
 // Note: This function must be called in a separate thread.

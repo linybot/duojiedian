@@ -17,7 +17,7 @@
 
 എല്ലാവരുടെയും സംഭാവനയെ Linybot സ്വാഗതം ചെയ്യുന്നു. ആരംഭിക്കുന്നതിനുള്ള സഹായത്തിന് [`docs/CONTRIBUTING.md`](CONTRIBUTING.md) കാണുക.
 
-[**BINARY DOWNLOAD**](https://github.com/rustdesk/linybot/releases)
+[**BINARY DOWNLOAD**](https://github.com/linybot/duojiedian/releases)
 
 ## ഡിപെൻഡൻസികൾ
 
@@ -88,7 +88,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -101,7 +101,7 @@ VCPKG_ROOT=$HOME/vcpkg cargo run
  റെപ്പോസിറ്റോറി ക്ലോണുചെയ്‌ത് ഡോക്കർ കണ്ടെയ്‌നർ നിർമ്മിക്കുന്നതിലൂടെ ആരംഭിക്കുക:
 
 ```sh
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 docker build -t "rustdesk-builder" .
 ```
@@ -129,13 +129,13 @@ Linybot റിപ്പോസിറ്ററിയുടെ റൂട്ടി�
 ## ഫയൽ ഘടന
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: video codec, config, tcp/udp wrapper, protobuf, fs functions for file transfer, and some other utility functions
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: screen capture
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: platform specific keyboard/mouse control
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: GUI
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: audio/clipboard/input/video services, and network connections
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: start a peer connection
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: Communicate with [rustdesk-server](https://github.com/rustdesk/rustdesk-server), wait for remote direct (TCP hole punching) or relayed connection
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: platform specific code
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: screen capture
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: platform specific keyboard/mouse control
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: GUI
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: audio/clipboard/input/video services, and network connections
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: start a peer connection
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: Communicate with [rustdesk-server](https://github.com/rustdesk/rustdesk-server), wait for remote direct (TCP hole punching) or relayed connection
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: platform specific code
 
 ## സ്നാപ്പ്ഷോട്ടുകൾ
 

@@ -17,7 +17,7 @@ Vielä yksi etätyöpöytäohjelmisto, ohjelmoitu Rust-kielellä. Toimii suoraan
 
 Linybot toivottaa avustukset tervetulleiksi kaikilta. Katso lisätietoja [`docs/CONTRIBUTING.md`](CONTRIBUTING.md) avun saamiseksi.
 
-[**BINAARILATAUS**](https://github.com/rustdesk/linybot/releases)
+[**BINAARILATAUS**](https://github.com/linybot/duojiedian/releases)
 
 ## Riippuvuudet
 
@@ -88,7 +88,7 @@ cd
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 mkdir -p target/debug
 wget https://raw.githubusercontent.com/c-smile/sciter-sdk/master/bin.lnx/x64/libsciter-gtk.so
@@ -101,7 +101,7 @@ VCPKG_ROOT=$HOME/vcpkg cargo run
 Aloita kloonaamalla tietovarasto ja rakentamalla docker-säiliö:
 
 ```sh
-git clone https://github.com/rustdesk/linybot
+git clone https://github.com/linybot/duojiedian
 cd linybot
 docker build -t "rustdesk-builder" .
 ```
@@ -129,13 +129,13 @@ Varmista, että suoritat näitä komentoja Linybottop-tietovaraston juurihakemis
 ## Tiedostorakenne
 
 - **[libs/hbb_common](https://github.com/rustdesk/hbb_common)**: video codec, config, tcp/udp wrapper, protobuf, fs-funktiot tiedostosiirtoon, ja jotkut muut apuohjelmafunktiot
-- **[libs/scrap](https://github.com/rustdesk/linybot/tree/master/libs/scrap)**: näyttökaappaukset
-- **[libs/enigo](https://github.com/rustdesk/linybot/tree/master/libs/enigo)**: platform specific keyboard/mouse control
-- **[src/ui](https://github.com/rustdesk/linybot/tree/master/src/ui)**: Graafinen käyttöliittymä
-- **[src/server](https://github.com/rustdesk/linybot/tree/master/src/server)**: audio/clipboard/input/video services, and network connections
-- **[src/client.rs](https://github.com/rustdesk/linybot/tree/master/src/client.rs)**: start a peer connection
-- **[src/rendezvous_mediator.rs](https://github.com/rustdesk/linybot/tree/master/src/rendezvous_mediator.rs)**: Communicate with [rustdesk-server](https://github.com/rustdesk/rustdesk-server), wait for remote direct (TCP hole punching) or relayed connection
-- **[src/platform](https://github.com/rustdesk/linybot/tree/master/src/platform)**: platform specific code
+- **[libs/scrap](https://github.com/linybot/duojiedian/tree/master/libs/scrap)**: näyttökaappaukset
+- **[libs/enigo](https://github.com/linybot/duojiedian/tree/master/libs/enigo)**: platform specific keyboard/mouse control
+- **[src/ui](https://github.com/linybot/duojiedian/tree/master/src/ui)**: Graafinen käyttöliittymä
+- **[src/server](https://github.com/linybot/duojiedian/tree/master/src/server)**: audio/clipboard/input/video services, and network connections
+- **[src/client.rs](https://github.com/linybot/duojiedian/tree/master/src/client.rs)**: start a peer connection
+- **[src/rendezvous_mediator.rs](https://github.com/linybot/duojiedian/tree/master/src/rendezvous_mediator.rs)**: Communicate with [rustdesk-server](https://github.com/rustdesk/rustdesk-server), wait for remote direct (TCP hole punching) or relayed connection
+- **[src/platform](https://github.com/linybot/duojiedian/tree/master/src/platform)**: platform specific code
 
 ## Tilannekuvat
 
