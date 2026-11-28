@@ -1,6 +1,6 @@
 [package]
 name = "linybot"
-version = "1.7.2"
+version = "1.7.3"
 authors = ["linybot <info@linybot.top>"]
 edition = "2021"
 build= "build.rs"

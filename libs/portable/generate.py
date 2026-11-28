@@ -88,6 +88,13 @@ def build_portable(output_folder: str, target: str):
     current_dir = os.getcwd()
     try:
         os.chdir(output_folder)
+        # data.bin is embedded with include_bytes!, so a cached artifact from a build
+        # with a different (or missing) payload must never be reused: drop this
+        # package's artifacts before rebuilding.
+        clean = ["cargo", "clean", "-p", "linybot-portable-packer"]
+        if target:
+            clean.extend(["--target", target])
+        subprocess.run(clean, check=False)
         cmd = ["cargo", "build", "--locked", "--release"]
         if target:
             cmd.extend(["--target", target])

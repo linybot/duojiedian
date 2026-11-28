@@ -830,9 +830,11 @@ def build_flutter_dmg(version, features):
         # set minimum osx build target, now is 10.14, which is the same as the flutter xcode project
         system2(
             f'MACOSX_DEPLOYMENT_TARGET=10.14 cargo build --locked --features {features} --release')
-    # copy dylib
-    system2(
-        "cp target/release/liblinybot.dylib target/release/liblinybot.dylib")
+    # The dylib already carries the name Xcode links against (crate lib "linybot"
+    # produces liblinybot.dylib), so only verify it instead of copying onto itself.
+    dylib = 'target/release/liblinybot.dylib'
+    if not os.path.isfile(dylib):
+        raise SystemExit(f'{dylib} not found')
     os.chdir('flutter')
     # cargo builds a single-arch dylib for the host; restrict Xcode to the same arch
     # so the universal-by-default ARCHS_STANDARD doesn't try to link a missing slice.
