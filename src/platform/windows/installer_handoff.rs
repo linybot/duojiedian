@@ -70,15 +70,15 @@ fn prepare_install_commands(cmds: &InstallCommands) -> ResultType<String> {
     Ok(format!(
         "@echo off\r\nsetlocal EnableExtensions DisableDelayedExpansion\r\n\
          set \"ERRORLEVEL=\"\r\n\
-         call :rustdesk_install\r\n\
-         set \"RUSTDESK_INSTALL_EXIT_CODE=%ERRORLEVEL%\"\r\n\
+         call :linybot_install\r\n\
+         set \"LINYBOT_INSTALL_EXIT_CODE=%ERRORLEVEL%\"\r\n\
          rd /s /q \"%~f0.dir\" > nul 2>&1\r\n\
-         (del /q \"%~f0\" {files} > nul 2>&1{directories} & rd \"%~dp0\" > nul 2>&1 & exit %RUSTDESK_INSTALL_EXIT_CODE%)\r\n\
-         :rustdesk_install\r\n\
+         (del /q \"%~f0\" {files} > nul 2>&1{directories} & rd \"%~dp0\" > nul 2>&1 & exit %LINYBOT_INSTALL_EXIT_CODE%)\r\n\
+         :linybot_install\r\n\
          \"{chcp}\" {UTF8_CODE_PAGE} > nul || exit /b \
          {BATCH_CODE_PAGE_FAILURE_EXIT_CODE}\r\n\
          {}\r\n\
-         set \"RUSTDESK_OUTPUT_DIR=%~f0.dir\"\r\n{commands}\r\nexit /b 0\r\n",
+         set \"LINYBOT_OUTPUT_DIR=%~f0.dir\"\r\n{commands}\r\nexit /b 0\r\n",
         trusted_install_environment()?
     ))
 }
@@ -164,10 +164,10 @@ mod tests {
         const COMMAND_FAILURE: u32 = 77;
         for exit_code in [0, COMMAND_FAILURE] {
             let root =
-                std::env::temp_dir().join(format!("rustdesk-handoff-{}", uuid::Uuid::new_v4()));
+                std::env::temp_dir().join(format!("linybot-handoff-{}", uuid::Uuid::new_v4()));
             let source = root.join("source 中文 !&^@().bat");
             fs::create_dir(&root).unwrap();
-            let bytes = shortcut_bytes(r"C:\RustDesk.exe", Some("--tray"), None).unwrap();
+            let bytes = shortcut_bytes(r"C:\Linybot.exe", Some("--tray"), None).unwrap();
             let shortcut =
                 ProtectedInstallFile::new(&root.join("shortcut !&^@().tmp"), &bytes).unwrap();
             let marker = root.join("copied.lnk");

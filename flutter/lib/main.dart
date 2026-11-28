@@ -164,7 +164,7 @@ void runMainApp(bool startService) async {
       windowManager.show();
       windowManager.focus();
       // Move registration of active main window here to prevent from async visible check.
-      rustDeskWinManager.registerActiveWindow(kWindowMainId);
+      linybotWinManager.registerActiveWindow(kWindowMainId);
     }
     windowManager.setOpacity(1);
     windowManager.setTitle(getWindowName());
@@ -450,7 +450,13 @@ class _AppState extends State<App> with WidgetsBindingObserver {
       }
     };
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateOrientation());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateOrientation();
+      // [duojiedian] Warn once about antivirus false positives on the main window.
+      if (!isDesktop || desktopType == DesktopType.main) {
+        showAntivirusTipIfNeeded();
+      }
+    });
   }
 
   @override

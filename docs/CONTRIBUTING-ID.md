@@ -1,10 +1,10 @@
-# Berkontribusi dalam pengembangan RustDesk
+# Berkontribusi dalam pengembangan Linybot
 
-RustDesk mengajak semua orang untuk ikut berkontribusi. Berikut ini adalah panduan jika kamu sedang mempertimbangkan untuk memberikan bantuan kepada kami:
+Linybot mengajak semua orang untuk ikut berkontribusi. Berikut ini adalah panduan jika kamu sedang mempertimbangkan untuk memberikan bantuan kepada kami:
 
 ## Kontirbusi
 
-Untuk melakukan kontribusi pada RustDesk atau dependensinya, sebaiknya dilakukan dalam bentuk pull request di GitHub. Setiap permintaan pull request akan ditinjau oleh kontributor utama atau seseorang yang memiliki wewenang untuk menggabungkan perubahan kode, baik yang sudah dimasukkan ke dalam struktur utama ataupun memberikan umpan balik untuk perubahan yang akan diperlukan. Setiap kontribusi harus sesuai dengan format ini, juga termasuk yang berasal dari kontributor utama.
+Untuk melakukan kontribusi pada Linybot atau dependensinya, sebaiknya dilakukan dalam bentuk pull request di GitHub. Setiap permintaan pull request akan ditinjau oleh kontributor utama atau seseorang yang memiliki wewenang untuk menggabungkan perubahan kode, baik yang sudah dimasukkan ke dalam struktur utama ataupun memberikan umpan balik untuk perubahan yang akan diperlukan. Setiap kontribusi harus sesuai dengan format ini, juga termasuk yang berasal dari kontributor utama.
 
 Apabila kamu ingin mengatasi sebuah masalah yang sudah ada di daftar issue, harap klaim terlebih dahulu dengan memberikan komentar pada GitHub issue yang ingin kamu kerjakan. Hal ini dilakukan untuk mencegah terjadinya duplikasi dari kontributor pada daftar issue yang sama.
 
@@ -24,8 +24,8 @@ Untuk instruksi Git yang lebih lanjut, cek disini [GitHub workflow 101](https://
 
 ## Tindakan
 
-<https://github.com/rustdesk/rustdesk/blob/master/docs/CODE_OF_CONDUCT.md>
+<https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md>
 
 ## Komunikasi
 
-Kontributor RustDesk sering berkunjung ke [Discord](https://discord.gg/nDceKgxnkV).
+Kontributor Linybot sering berkunjung ke [Discord](https://discord.gg/nDceKgxnkV).

@@ -107,8 +107,8 @@ pub(super) fn verified_update_artifact_from_release_page_url(
     let release_id = release_id_from_update_url(update_url)?;
     let display_version = display_version_from_release_id(&release_id)?;
     let expected_artifact_url_prefix =
-        format!("https://github.com/rustdesk/rustdesk/releases/download/{release_id}/");
-    let metadata_url = format!("{expected_artifact_url_prefix}rustdesk-update.json");
+        format!("https://github.com/rustdesk/linybot/releases/download/{release_id}/");
+    let metadata_url = format!("{expected_artifact_url_prefix}linybot-update.json");
     let signature_url = format!("{metadata_url}.sig");
     let metadata_bytes = fetch_update_sidecar_bytes(&metadata_url)?;
     let signature_bytes = fetch_update_sidecar_bytes(&signature_url)?;
@@ -177,8 +177,8 @@ pub fn get_update_download_file_from_url(url: &str) -> Option<PathBuf> {
     let tag = segments.next()?;
     let filename = segments.next()?;
 
-    if owner != "rustdesk"
-        || repo != "rustdesk"
+    if owner != "linybot"
+        || repo != "duojiedian"
         || releases != "releases"
         || download != "download"
         || tag.is_empty()
@@ -214,29 +214,29 @@ mod tests {
     #[test]
     fn update_download_file_accepts_expected_github_asset_urls() {
         let file = get_update_download_file_from_url(
-            "https://github.com/rustdesk/rustdesk/releases/download/1.4.0/rustdesk-1.4.0-x86_64.dmg",
+            "https://github.com/linybot/duojiedian/releases/download/1.4.0/linybot-1.4.0-x86_64.dmg",
         )
         .expect("valid GitHub release asset URL");
 
         assert_eq!(
             file.file_name().and_then(|name| name.to_str()),
-            Some("rustdesk-1.4.0-x86_64.dmg")
+            Some("linybot-1.4.0-x86_64.dmg")
         );
     }
 
     #[test]
     fn update_download_file_rejects_untrusted_or_malformed_urls() {
         for url in [
-            "http://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
-            "https://example.com/rustdesk.exe",
-            "https://github.com/other/project/releases/download/1/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/nested/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/C:rustdesk.exe",
-            "https://user@github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
-            "https://github.com:443/rustdesk/rustdesk/releases/download/1/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe?download=1",
-            "https://github.com/rustdesk/rustdesk/releases/download/1/rustdesk.exe#download",
+            "http://github.com/rustdesk/linybot/releases/download/1/linybot.exe",
+            "https://example.com/linybot.exe",
+            "https://github.com/other/project/releases/download/1/linybot.exe",
+            "https://github.com/rustdesk/linybot/releases/download/1/",
+            "https://github.com/rustdesk/linybot/releases/download/1/nested/linybot.exe",
+            "https://github.com/rustdesk/linybot/releases/download/1/C:linybot.exe",
+            "https://user@github.com/rustdesk/linybot/releases/download/1/linybot.exe",
+            "https://github.com:443/linybot/linybot/releases/download/1/linybot.exe",
+            "https://github.com/rustdesk/linybot/releases/download/1/linybot.exe?download=1",
+            "https://github.com/rustdesk/linybot/releases/download/1/linybot.exe#download",
             "not a url",
         ] {
             assert!(get_update_download_file_from_url(url).is_none(), "{url}");

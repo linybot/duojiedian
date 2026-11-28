@@ -271,25 +271,25 @@ pub fn translate_locale(name: String, locale: &str) -> String {
         if let Some(value) = placeholder_value.as_ref() {
             s = s.replace("{}", &value);
         }
-        if !crate::is_rustdesk() {
-            if s.contains("RustDesk")
-                && !name.starts_with("upgrade_rustdesk_server_pro")
+        if !crate::is_linybot() {
+            if s.contains("Linybot")
+                && !name.starts_with("upgrade_linybot_server_pro")
                 && name != "powered_by_me"
             {
                 let app_name = crate::get_app_name();
-                if !app_name.contains("RustDesk") {
-                    s = s.replace("RustDesk", &app_name);
+                if !app_name.contains("Linybot") {
+                    s = s.replace("Linybot", &app_name);
                 } else {
                     // https://github.com/rustdesk/rustdesk-server-pro/issues/845
-                    // If app_name contains "RustDesk" (e.g., "RustDesk-Admin"), we need to avoid
-                    // replacing "RustDesk" within the already-substituted app_name, which would
-                    // cause duplication like "RustDesk-Admin" -> "RustDesk-Admin-Admin".
+                    // If app_name contains "Linybot" (e.g., "Linybot-Admin"), we need to avoid
+                    // replacing "Linybot" within the already-substituted app_name, which would
+                    // cause duplication like "Linybot-Admin" -> "Linybot-Admin-Admin".
                     //
                     // app_name only contains alphanumeric and hyphen.
                     const PLACEHOLDER: &str = "#A-P-P-N-A-M-E#";
                     if !s.contains(PLACEHOLDER) {
                         s = s.replace(&app_name, PLACEHOLDER);
-                        s = s.replace("RustDesk", &app_name);
+                        s = s.replace("Linybot", &app_name);
                         s = s.replace(PLACEHOLDER, &app_name);
                     } else {
                         // It's very unlikely to reach here.
@@ -463,16 +463,16 @@ mod test {
     }
 
     #[test]
-    fn test_translations_spell_the_app_name_as_rustdesk() {
+    fn test_translations_spell_the_app_name_as_linybot() {
         use super::*;
 
-        // translate() swaps the exact "RustDesk" for a custom client's name, so any other
+        // translate() swaps the exact "Linybot" for a custom client's name, so any other
         // spelling stays visible in custom clients.
         let re = hbb_common::regex::Regex::new(r"(?i)\brus?t?desk\b").unwrap();
         for table in [&*da::T, &*el::T, &*es::T, &*nl::T, &*uk::T] {
             for (key, value) in table.iter() {
                 for found in re.find_iter(value) {
-                    assert_eq!(found.as_str(), "RustDesk", "{key:?} => {value:?}");
+                    assert_eq!(found.as_str(), "Linybot", "{key:?} => {value:?}");
                 }
             }
         }

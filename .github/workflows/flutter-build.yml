@@ -1,4 +1,4 @@
-name: Build the flutter version of the RustDesk
+name: Build the flutter version of the Linybot
 
 on:
   workflow_call:
@@ -17,11 +17,11 @@ on:
 # variables from this workflow!
 #
 # It does NOT read build steps, however, so please fix 'flutter/build_fdroid.sh
-# whenever you add changes to Android CI build action ('build-rustdesk-android')
+# whenever you add changes to Android CI build action ('build-linybot-android')
 # in this file!
 
 env:
-  SCITER_RUST_VERSION: "1.75" # https://github.com/rustdesk/rustdesk/discussions/7503, also 1.78 has ABI change which causes our sciter version not working, https://blog.rust-lang.org/2024/03/30/i128-layout-update.html
+  SCITER_RUST_VERSION: "1.75" # https://github.com/rustdesk/linybot/discussions/7503, also 1.78 has ABI change which causes our sciter version not working, https://blog.rust-lang.org/2024/03/30/i128-layout-update.html
   RUST_VERSION: "1.75" # sciter failed on m1 with 1.78 because of https://blog.rust-lang.org/2024/03/30/i128-layout-update.html
   MAC_RUST_VERSION: "1.81" # 1.81 is requred for macos, because of https://github.com/yury/cidre requires 1.81
   CARGO_NDK_VERSION: "3.1.2"
@@ -33,11 +33,11 @@ env:
   # Windows arm64 only: the first stable Flutter to ship a native arm64 Windows Dart SDK +
   # engine is 3.44. Every other platform except macOS arm64 (below) stays on FLUTTER_VERSION
   # (3.24.5) until Windows 7 support is restored after the upstream-wide Flutter bump. The 3.44
-  # jobs patch the few 3.44-only source/pubspec changes on the fly (see "Patch RustDesk sources
+  # jobs patch the few 3.44-only source/pubspec changes on the fly (see "Patch Linybot sources
   # for Flutter 3.44").
   FLUTTER_WINDOWS_ARM_VERSION: "3.44.9"
   # macOS arm64 only: 3.24.5's engine crashes in attributedSubstringForProposedRange
-  # (https://github.com/rustdesk/rustdesk/issues/16817, https://github.com/flutter/flutter/issues/153157).
+  # (https://github.com/rustdesk/linybot/issues/16817, https://github.com/flutter/flutter/issues/153157).
   # x86_64 stays on FLUTTER_VERSION: 3.44's FlutterMacOS needs macOS 10.15 there, and it targets 10.14.
   FLUTTER_MACOS_ARM_VERSION: "3.44.9"
   # for arm64 linux because official Dart SDK does not work
@@ -48,12 +48,12 @@ env:
   # If we change the `VCPKG COMMIT_ID`, please remember:
   # 1. Call `$VCPKG_ROOT/vcpkg x-update-baseline` to update the baseline in `vcpkg.json`.
   #  Or we may face build issue like 
-  #  https://github.com/rustdesk/rustdesk/actions/runs/14414119794/job/40427970174
+  #  https://github.com/rustdesk/linybot/actions/runs/14414119794/job/40427970174
   # 2. Update the `VCPKG_COMMIT_ID` in `ci.yml` and `playground.yml`.
   VCPKG_COMMIT_ID: "9e593bb18ea69cc5095e012465dcd675a822ed0d"
   VCPKG_CMAKE_VERSION: "4.3.0"
   ARMV7_VCPKG_COMMIT_ID: "6f29f12e82a8293156836ad81cc9bf5af41fe836" # 2025.01.13, got "/opt/artifacts/vcpkg/vcpkg: No such file or directory" with latest version
-  VERSION: "1.6.6"
+  VERSION: "1.7.0"
   NDK_VERSION: "r28c"
   #signing keys env variable checks
   ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
@@ -95,8 +95,8 @@ jobs:
       - name: Validate update metadata keys
         if: ${{ inputs.publish-update-metadata }}
         env:
-          RUSTDESK_UPDATE_ED25519_SEED: ${{ secrets.RUSTDESK_UPDATE_ED25519_SEED }}
-          RUSTDESK_UPDATE_ED25519_PUBLIC_KEY: ${{ vars.RUSTDESK_UPDATE_ED25519_PUBLIC_KEY }}
+          LINYBOT_UPDATE_ED25519_SEED: ${{ secrets.LINYBOT_UPDATE_ED25519_SEED }}
+          LINYBOT_UPDATE_ED25519_PUBLIC_KEY: ${{ vars.LINYBOT_UPDATE_ED25519_PUBLIC_KEY }}
         run: python res/update/generate_update_metadata.py check-key
 
   generate-sbom:
@@ -117,7 +117,7 @@ jobs:
       - name: Generate SBOM
         run: |
           syft dir:. \
-            -o cyclonedx-json=rustdesk.sbom.json
+            -o cyclonedx-json=linybot.sbom.json
 
       - name: Publish Release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -126,15 +126,15 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk.sbom.json
+            linybot.sbom.json
 
   generate-bridge:
     needs: [validate-update-metadata-keys]
     uses: ./.github/workflows/bridge.yml
 
-  build-RustDeskTempTopMostWindow:
+  build-LinybotTempTopMostWindow:
     needs: [validate-update-metadata-keys]
-    uses: ./.github/workflows/third-party-RustDeskTempTopMostWindow.yml
+    uses: ./.github/workflows/third-party-LinybotTempTopMostWindow.yml
     strategy:
       fail-fast: false
       matrix:
@@ -156,7 +156,7 @@ jobs:
 
   build-for-windows-flutter:
     name: ${{ matrix.job.target }}
-    needs: [build-RustDeskTempTopMostWindow, generate-bridge]
+    needs: [build-LinybotTempTopMostWindow, generate-bridge]
     runs-on: ${{ matrix.job.os }}
     strategy:
       fail-fast: false
@@ -254,9 +254,9 @@ jobs:
           }
 
       # https://github.com/flutter/flutter/issues/155685
-      # x64 only: arm64 uses the stock native arm64 Windows engine, and the rustdesk/engine
+      # x64 only: arm64 uses the stock native arm64 Windows engine, and the linybot/engine
       # windows-x64-release.zip is built for the 3.24-era x64 engine (matches FLUTTER_VERSION).
-      - name: Replace engine with rustdesk custom flutter engine
+      - name: Replace engine with linybot custom flutter engine
         if: ${{ matrix.job.arch == 'x86_64' }}
         run: |
           flutter doctor -v
@@ -277,7 +277,7 @@ jobs:
             git apply flutter_3.24.4_dropdown_menu_enableFilter.diff
           fi
 
-      - name: Patch RustDesk sources for Flutter 3.44 (arm64)
+      - name: Patch Linybot sources for Flutter 3.44 (arm64)
         # arm64 is on Flutter 3.44 (as is macOS arm64); apply its source/pubspec deltas on the fly
         # (shared with the macOS arm64 build and the 3.44 bridge job) so the committed sources
         # stay on Flutter 3.24.5.
@@ -331,21 +331,21 @@ jobs:
         shell: bash
         run: echo "SODIUM_LIB_DIR=$VCPKG_ROOT/installed/${{ matrix.job.vcpkg-triplet }}/lib" >> "$GITHUB_ENV"
 
-      - name: Build rustdesk
+      - name: Build linybot
         run: |
-          # Windows: build RustDesk
+          # Windows: build Linybot
           # --hwcodec is shared by all Windows targets; per-target extras (e.g. --vram) come from the matrix
           python3 .\build.py --portable --flutter --skip-portable-pack --hwcodec ${{ matrix.job.build-args }}
-          mv ./flutter/build/windows/${{ matrix.job.flutter-arch }}/runner/Release ./rustdesk
+          mv ./flutter/build/windows/${{ matrix.job.flutter-arch }}/runner/Release ./linybot
 
-          # Download usbmmidd_v2.zip and extract it to ./rustdesk
+          # Download usbmmidd_v2.zip and extract it to ./linybot
           Invoke-WebRequest -Uri https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip -OutFile usbmmidd_v2.zip
           Expand-Archive usbmmidd_v2.zip -DestinationPath .
           Remove-Item -Path usbmmidd_v2\Win32 -Recurse
           Remove-Item -Path "usbmmidd_v2\deviceinstaller64.exe", "usbmmidd_v2\deviceinstaller.exe", "usbmmidd_v2\usbmmidd.bat"
-          mv -Force .\usbmmidd_v2 ./rustdesk
+          mv -Force .\usbmmidd_v2 ./linybot
 
-          # Download printer driver files and extract them to ./rustdesk
+          # Download printer driver files and extract them to ./linybot
           try {
             Invoke-WebRequest -Uri https://github.com/rustdesk/hbb_common/releases/download/driver/rustdesk_printer_driver_v4-1.4.zip -OutFile rustdesk_printer_driver_v4-1.4.zip
             Invoke-WebRequest -Uri https://github.com/rustdesk/hbb_common/releases/download/driver/printer_driver_adapter.zip -OutFile printer_driver_adapter.zip
@@ -359,10 +359,10 @@ jobs:
             if ($checksum_driver -eq $downloadsum_driver.Hash -and $checksum_adapter -eq $downloadsum_adapter.Hash) {
                 Write-Output "rustdesk_printer_driver_v4-1.4, checksums match, extract the file."
                 Expand-Archive rustdesk_printer_driver_v4-1.4.zip -DestinationPath .
-                mkdir ./rustdesk/drivers
-                mv -Force .\rustdesk_printer_driver_v4-1.4 ./rustdesk/drivers/RustDeskPrinterDriver
+                mkdir ./linybot/drivers
+                mv -Force .\rustdesk_printer_driver_v4-1.4 ./linybot/drivers/LinybotPrinterDriver
                 Expand-Archive printer_driver_adapter.zip -DestinationPath .
-                mv -Force .\printer_driver_adapter.dll ./rustdesk
+                mv -Force .\printer_driver_adapter.dll ./linybot
             } elseif ($checksum_driver -ne $downloadsum_driver.Hash) {
                 Write-Output "rustdesk_printer_driver_v4-1.4, checksums do not match, ignore the file."
             } else {
@@ -399,45 +399,45 @@ jobs:
             ls -l ./libs/portable/Runner.res;
           fi
 
-      - name: Download RustDeskTempTopMostWindow artifacts
+      - name: Download LinybotTempTopMostWindow artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         if: ${{ inputs.upload-artifact }}
         with:
           name: ${{ matrix.job.arch == 'aarch64' && 'topmostwindow-artifacts-ARM64' || 'topmostwindow-artifacts-x64' }}
-          path: "./rustdesk"
+          path: "./linybot"
 
       - name: Upload unsigned
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-windows-${{ matrix.job.arch }}
-          path: rustdesk
+          name: linybot-unsigned-windows-${{ matrix.job.arch }}
+          path: linybot
 
-      - name: Sign rustdesk files
+      - name: Sign linybot files
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: bash
         run: |
           pip3 install requests argparse
-          BASE_URL=${{ env.SIGN_BASE_URL }} SECRET_KEY=${{ secrets.SIGN_SECRET_KEY }} python3 res/job.py sign_files ./rustdesk/
+          BASE_URL=${{ env.SIGN_BASE_URL }} SECRET_KEY=${{ secrets.SIGN_SECRET_KEY }} python3 res/job.py sign_files ./linybot/
 
       - name: Verify Windows Flutter version
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true'
         shell: powershell
         run: |
-          $reportedVersion = (& ".\rustdesk\rustdesk.exe" --version | Out-String).Trim()
+          $reportedVersion = (& ".\linybot\linybot.exe" --version | Out-String).Trim()
           if ($LASTEXITCODE -ne 0) {
-            throw "rustdesk --version exited with $LASTEXITCODE"
+            throw "linybot --version exited with $LASTEXITCODE"
           }
           if ($reportedVersion -cne $env:VERSION) {
-            throw "RustDesk reports version '$reportedVersion', expected '$env:VERSION'"
+            throw "Linybot reports version '$reportedVersion', expected '$env:VERSION'"
           }
 
       - name: Verify template payload signatures
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: powershell
         run: |
-          Get-ChildItem ./rustdesk -Recurse -File -ErrorAction Stop |
-            Where-Object { $_.Extension -eq '.exe' -or ($_.Extension -eq '.dll' -and $_.FullName -notmatch 'RustDeskPrinterDriver|usbmmidd_v2') } |
+          Get-ChildItem ./linybot -Recurse -File -ErrorAction Stop |
+            Where-Object { $_.Extension -eq '.exe' -or ($_.Extension -eq '.dll' -and $_.FullName -notmatch 'LinybotPrinterDriver|usbmmidd_v2') } |
             ForEach-Object {
               $signature = Get-AuthenticodeSignature -LiteralPath $_.FullName -ErrorAction Stop
               if ($signature.Status -ne 'Valid') { throw "Invalid template payload signature: $($_.FullName) ($($signature.Status))" }
@@ -450,16 +450,16 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../rustdesk/ -e rustdesk.exe -l 11 -t "${{ matrix.job.target }}" --exclude-exe
+          python3 ./generate.py -f ../../linybot/ -e linybot.exe -l 11 -t "${{ matrix.job.target }}" --exclude-exe
           popd
           mkdir -p ./packer-template
-          cp ./target/${{ matrix.job.target }}/release/rustdesk-portable-packer.exe ./packer-template/rustdesk-template-${{ matrix.job.arch }}.exe
+          cp ./target/${{ matrix.job.target }}/release/linybot-portable-packer.exe ./packer-template/linybot-template-${{ matrix.job.arch }}.exe
 
       - name: Upload unsigned template packer
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-packer-template-${{ matrix.job.arch }}
+          name: linybot-unsigned-packer-template-${{ matrix.job.arch }}
           path: ./packer-template
           if-no-files-found: error
 
@@ -470,10 +470,10 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/rustdesk.exe
+          python3 ./generate.py -f ../../linybot/ -o . -e ../../linybot/linybot.exe
           popd
           mkdir -p ./SignOutput
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
+          mv ./target/release/linybot-portable-packer.exe ./SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce # v2
@@ -491,13 +491,13 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           pushd ./res/msi
-          python preprocess.py --arp -d ../../rustdesk
+          python preprocess.py --arp -d ../../linybot
           nuget restore msi.sln
           $msiPlatform = if ('${{ matrix.job.arch }}' -eq 'aarch64') { 'ARM64' } else { 'x64' }
           msbuild msi.sln -p:Configuration=Release -p:Platform=$msiPlatform /p:TargetVersion=Windows10
           $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
-          mv $msi.FullName ../../SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
-          sha256sum ../../SignOutput/rustdesk-*.msi
+          mv $msi.FullName ../../SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
+          sha256sum ../../SignOutput/linybot-*.msi
 
       - name: Build pre-built MSI template
         # Two things this works around: preprocess.py rewrites res/msi in place, so the
@@ -505,13 +505,13 @@ jobs:
         # <app-name>.exe inside the dist, so the dist copy is renamed to match.
         #
         # The placeholder is chosen to keep this template as close to the shipped msi as
-        # possible: eight characters like "RustDesk", and a valid 8.3 name, so WiX
+        # possible: eight characters like "Linybot", and a valid 8.3 name, so WiX
         # derives no short name for it. A longer placeholder would get one, and a patch
         # cannot rewrite a truncated placeholder, leaving short names pointing at it.
         #
-        # It still has to be unique, which is why "RustDesk" itself cannot be used:
-        # it also names payload that must never be renamed, such as librustdesk.dll
-        # and drivers\RustDeskPrinterDriver.
+        # It still has to be unique, which is why "Linybot" itself cannot be used:
+        # it also names payload that must never be renamed, such as liblinybot.dll
+        # and drivers\LinybotPrinterDriver.
         #
         #
         # Building the arm64 template on the native arm64 runner makes the ARM
@@ -520,34 +520,34 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
           git checkout -- res/msi
-          cp -r ./rustdesk ./rustdesk-msi-template
-          mv ./rustdesk-msi-template/rustdesk.exe ./rustdesk-msi-template/RDAPPNAM.exe
-          Set-Content -Path ./rustdesk-msi-template/custom.txt -Value 'placeholder' -NoNewline
-          $assets = './rustdesk-msi-template/data/flutter_assets/assets'
+          cp -r ./linybot ./linybot-msi-template
+          mv ./linybot-msi-template/linybot.exe ./linybot-msi-template/RDAPPNAM.exe
+          Set-Content -Path ./linybot-msi-template/custom.txt -Value 'placeholder' -NoNewline
+          $assets = './linybot-msi-template/data/flutter_assets/assets'
           New-Item -ItemType Directory -Force -Path $assets | Out-Null
           foreach ($a in 'icon.ico','icon.png','logo.png','logo_light.png','logo_dark.png') {
             Set-Content -Path "$assets/$a" -Value 'placeholder' -NoNewline
           }
           pushd ./res/msi
-          python preprocess.py --arp --template --revision-version 0 -d ../../rustdesk-msi-template --app-name RDAPPNAM
+          python preprocess.py --arp --template --revision-version 0 -d ../../linybot-msi-template --app-name RDAPPNAM
           $msiPlatform = if ('${{ matrix.job.arch }}' -eq 'aarch64') { 'ARM64' } else { 'x64' }
           msbuild msi.sln -t:clean -p:Configuration=Release -p:Platform=$msiPlatform
           msbuild msi.sln -p:Configuration=Release -p:Platform=$msiPlatform /p:TargetVersion=Windows10
           $msi = Get-ChildItem ./Package/bin/*/Release/en-us/Package.msi | Select-Object -First 1
           popd
           mkdir ./msi-template
-          mv $msi.FullName ./msi-template/rustdesk-template-${{ matrix.job.arch }}.msi
+          mv $msi.FullName ./msi-template/linybot-template-${{ matrix.job.arch }}.msi
           git checkout -- res/msi
-          rm -r -fo ./rustdesk-msi-template
+          rm -r -fo ./linybot-msi-template
 
       - name: Upload unsigned msi template
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-msi-template-${{ matrix.job.arch }}
+          name: linybot-unsigned-msi-template-${{ matrix.job.arch }}
           path: ./msi-template
 
-      - name: Sign rustdesk self-extracted file
+      - name: Sign linybot self-extracted file
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: bash
         run: |
@@ -558,7 +558,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-flutter-${{ matrix.job.arch }}-exe
-          path: ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
+          path: ./SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.exe
           if-no-files-found: error
 
       - name: Upload signed Windows Flutter MSI
@@ -566,7 +566,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-flutter-${{ matrix.job.arch }}-msi
-          path: ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
+          path: ./SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.msi
           if-no-files-found: error
 
       - name: Publish Release
@@ -576,8 +576,8 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./SignOutput/rustdesk-*.msi
-            ./SignOutput/rustdesk-*.exe
+            ./SignOutput/linybot-*.msi
+            ./SignOutput/linybot-*.exe
 
   # The fallback for the flutter version, we use Sciter for 32bit Windows.
   build-for-windows-sciter:
@@ -627,7 +627,7 @@ jobs:
           # See https://github.com/rust-lang/rustup/pull/4935.
           # Alternatively, an x64 compiler could use cargo build --target i686-pc-windows-msvc.
           # This requires 64-bit LLVM for host build scripts and updated packaging paths,
-          # and has not been manually verified for RustDesk.
+          # and has not been manually verified for Linybot.
           rustup toolchain install nightly-2023-10-13-${{ matrix.job.target }} \
             --target ${{ matrix.job.target }} --component rustfmt \
             --profile minimal --no-self-update --force-non-host
@@ -664,7 +664,7 @@ jobs:
           head -n 100 "${VCPKG_ROOT}/buildtrees/ffmpeg/build-${{ matrix.job.vcpkg-triplet }}-rel-out.log" || true
         shell: bash
 
-      - name: Build rustdesk
+      - name: Build linybot
         id: build
         shell: bash
         run: |
@@ -674,7 +674,7 @@ jobs:
           cargo update -p sciter-rs --precise 674e07d3066ca9a92ced3816203ab6b652629d1e
           cargo build --locked --features inline,vram,hwcodec --release --bins
           mkdir -p ./Release
-          mv ./target/release/rustdesk.exe ./Release/rustdesk.exe
+          mv ./target/release/linybot.exe ./Release/linybot.exe
           curl -LJ -o ./Release/sciter.dll https://github.com/c-smile/sciter-sdk/raw/master/bin.win/x32/sciter.dll
           echo "output_folder=./Release" >> $GITHUB_OUTPUT
           curl -LJ -o ./usbmmidd_v2.zip https://github.com/rustdesk-org/rdev/releases/download/usbmmidd_v2/usbmmidd_v2.zip
@@ -705,10 +705,10 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-windows-${{ matrix.job.arch }}
+          name: linybot-unsigned-windows-${{ matrix.job.arch }}
           path: Release
 
-      - name: Sign rustdesk files
+      - name: Sign linybot files
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: bash
         run: |
@@ -719,12 +719,12 @@ jobs:
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true'
         shell: powershell
         run: |
-          $reportedVersion = (& ".\Release\rustdesk.exe" --version | Out-String).Trim()
+          $reportedVersion = (& ".\Release\linybot.exe" --version | Out-String).Trim()
           if ($LASTEXITCODE -ne 0) {
-            throw "rustdesk --version exited with $LASTEXITCODE"
+            throw "linybot --version exited with $LASTEXITCODE"
           }
           if ($reportedVersion -cne $env:VERSION) {
-            throw "RustDesk reports version '$reportedVersion', expected '$env:VERSION'"
+            throw "Linybot reports version '$reportedVersion', expected '$env:VERSION'"
           }
 
       - name: Verify template payload signatures
@@ -732,7 +732,7 @@ jobs:
         shell: powershell
         run: |
           Get-ChildItem ./Release -Recurse -File -ErrorAction Stop |
-            Where-Object { $_.Extension -eq '.exe' -or ($_.Extension -eq '.dll' -and $_.FullName -notmatch 'RustDeskPrinterDriver|usbmmidd_v2') } |
+            Where-Object { $_.Extension -eq '.exe' -or ($_.Extension -eq '.dll' -and $_.FullName -notmatch 'LinybotPrinterDriver|usbmmidd_v2') } |
             ForEach-Object {
               $signature = Get-AuthenticodeSignature -LiteralPath $_.FullName -ErrorAction Stop
               if ($signature.Status -ne 'Valid') { throw "Invalid template payload signature: $($_.FullName) ($($signature.Status))" }
@@ -745,16 +745,16 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../Release/ -e rustdesk.exe -l 11 -t "${{ matrix.job.target }}"
+          python3 ./generate.py -f ../../Release/ -e linybot.exe -l 11 -t "${{ matrix.job.target }}"
           popd
           mkdir -p ./packer-template
-          cp ./target/${{ matrix.job.target }}/release/rustdesk-portable-packer.exe ./packer-template/rustdesk-template-${{ matrix.job.arch }}.exe
+          cp ./target/${{ matrix.job.target }}/release/linybot-portable-packer.exe ./packer-template/linybot-template-${{ matrix.job.arch }}.exe
 
       - name: Upload unsigned template packer
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-packer-template-${{ matrix.job.arch }}
+          name: linybot-unsigned-packer-template-${{ matrix.job.arch }}
           path: ./packer-template
           if-no-files-found: error
 
@@ -764,12 +764,12 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../Release/ -o . -e ../../Release/rustdesk.exe
+          python3 ./generate.py -f ../../Release/ -o . -e ../../Release/linybot.exe
           popd
           mkdir -p ./SignOutput
-          mv ./target/release/rustdesk-portable-packer.exe ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.exe
+          mv ./target/release/linybot-portable-packer.exe ./SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.exe
 
-      - name: Sign rustdesk self-extracted file
+      - name: Sign linybot self-extracted file
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         shell: bash
         run: |
@@ -780,7 +780,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: windows-sciter-x86-exe
-          path: ./SignOutput/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.exe
+          path: ./SignOutput/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.exe
           if-no-files-found: error
 
       - name: Publish Release
@@ -790,11 +790,11 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./SignOutput/rustdesk-*.exe
+            ./SignOutput/linybot-*.exe
 
-  build-rustdesk-ios:
+  build-linybot-ios:
     if: ${{ inputs.upload-artifact }}
-    name: build rustdesk ios ipa
+    name: build linybot ios ipa
     runs-on: ${{ matrix.job.os }}
     needs: [generate-bridge]
     strategy:
@@ -870,7 +870,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: rustdesk-lib-cache-ios
+          prefix-key: linybot-lib-cache-ios
           key: ${{ matrix.job.target }}
 
       - name: Restore bridge files
@@ -879,18 +879,18 @@ jobs:
           name: bridge-artifact
           path: ./
 
-      - name: Build rustdesk lib
+      - name: Build linybot lib
         run: |
           rustup target add ${{ matrix.job.target }}
           cargo build --locked --features flutter,hwcodec --release --target aarch64-apple-ios --lib
           
-      - name: Upload liblibrustdesk.a Artifacts
+      - name: Upload libliblinybot.a Artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: liblibrustdesk.a
-          path: target/aarch64-apple-ios/release/liblibrustdesk.a
+          name: libliblinybot.a
+          path: target/aarch64-apple-ios/release/libliblinybot.a
 
-      - name: Build rustdesk
+      - name: Build linybot
         shell: bash
         run: |
           pushd flutter
@@ -902,7 +902,7 @@ jobs:
       #   # if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
       #   uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       #   with:
-      #     name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+      #     name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
       #     path: flutter/build/ios/ipa/*.ipa
 
       # - name: Publish ipa package
@@ -934,7 +934,7 @@ jobs:
           - {
               target: aarch64-apple-darwin,
               os: macos-26,
-              # extra-build-args: "--disable-flutter-texture-render", # disable this for mac, because we see a lot of users reporting flickering both on arm and x64, and we can not confirm if texture rendering has better performance if htere is no vram, https://github.com/rustdesk/rustdesk/issues/6296
+              # extra-build-args: "--disable-flutter-texture-render", # disable this for mac, because we see a lot of users reporting flickering both on arm and x64, and we can not confirm if texture rendering has better performance if htere is no vram, https://github.com/rustdesk/linybot/issues/6296
               extra-build-args: "--screencapturekit",
               extra-cargo-features: ",screencapturekit",
               arch: aarch64,
@@ -959,13 +959,13 @@ jobs:
         with:
           p12-file-base64: ${{ secrets.MACOS_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_P12_PASSWORD }}
-          keychain: rustdesk
+          keychain: linybot
           keychain-password: ${{ secrets.MACOS_P12_PASSWORD }}
 
       - name: Check sign and import sign key
         if: env.MACOS_P12_BASE64 != null
         run: |
-          security default-keychain -s rustdesk.keychain
+          security default-keychain -s linybot.keychain
           security find-identity -v
 
       - name: Import notarize key
@@ -973,7 +973,7 @@ jobs:
         uses: timheuer/base64-to-file@adaa40c0c581f276132199d4cf60afa07ce60eac # v1.2
         with:
           # https://gregoryszorc.com/docs/apple-codesign/stable/apple_codesign_rcodesign.html#notarizing-and-stapling
-          fileName: rustdesk.json
+          fileName: linybot.json
           fileDir: ${{ github.workspace }}
           encodedString: ${{ secrets.MACOS_NOTARIZE_JSON }}
 
@@ -1037,7 +1037,7 @@ jobs:
           sed -i -e 's/_setFramesEnabledState(false);/\/\/_setFramesEnabledState(false);/g' ../packages/flutter/lib/src/scheduler/binding.dart
           grep -n '_setFramesEnabledState(false);' ../packages/flutter/lib/src/scheduler/binding.dart
 
-      - name: Patch RustDesk sources for Flutter 3.44 (arm64)
+      - name: Patch Linybot sources for Flutter 3.44 (arm64)
         # The script uses GNU `sed -i`, which macOS's BSD sed rejects.
         if: ${{ matrix.job.arch == 'aarch64' }}
         shell: bash
@@ -1103,7 +1103,7 @@ jobs:
           cargo -V
           rustc -V
 
-      - name: Build rustdesk
+      - name: Build linybot
         run: |
           if [ "${{ matrix.job.target }}" = "aarch64-apple-darwin" ]; then
             MIN_MACOS_VERSION="12.3"
@@ -1139,14 +1139,14 @@ jobs:
           CREATE_DMG="$(command -v create-dmg)"
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
-          create-dmg --icon "RustDesk.app" 200 190 --hide-extension "RustDesk.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/RustDesk.app
+          create-dmg --icon "Linybot.app" 200 190 --hide-extension "Linybot.app" --window-size 800 400 --app-drop-link 600 185 linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg ./flutter/build/macos/Build/Products/Release/Linybot.app
 
       - name: Upload unsigned macOS app
         if: env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-unsigned-macos-${{ matrix.job.arch }}
-          path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg # can not upload the directory directly or tar.gz, which destroy the link structure, causing the codesign failed
+          name: linybot-unsigned-macos-${{ matrix.job.arch }}
+          path: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg # can not upload the directory directly or tar.gz, which destroy the link structure, causing the codesign failed
 
       - name: Codesign app and create signed dmg
         if: env.MACOS_P12_BASE64 != null && env.UPLOAD_ARTIFACT == 'true'
@@ -1156,45 +1156,45 @@ jobs:
           CREATE_DMG="$(readlink -f "$CREATE_DMG")"
           sed -i -e 's/MAXIMUM_UNMOUNTING_ATTEMPTS=3/MAXIMUM_UNMOUNTING_ATTEMPTS=7/' "$CREATE_DMG"
           # Unlock keychain
-          security default-keychain -s rustdesk.keychain
-          security unlock-keychain -p ${{ secrets.MACOS_P12_PASSWORD }} rustdesk.keychain
-          # start sign the rustdesk.app and dmg
+          security default-keychain -s linybot.keychain
+          security unlock-keychain -p ${{ secrets.MACOS_P12_PASSWORD }} linybot.keychain
+          # start sign the linybot.app and dmg
           rm -rf *.dmg || true
           # the identity secret carries its own shell quoting, so expand it inline like the dmg codesign below
           bash ./.github/scripts/sign-macos-app.sh \
-            ./flutter/build/macos/Build/Products/Release/RustDesk.app \
+            ./flutter/build/macos/Build/Products/Release/Linybot.app \
             ${{ secrets.MACOS_CODESIGN_IDENTITY }} \
             ./flutter/macos/Runner/Release.entitlements
           if [ "$PUBLISH_UPDATE_METADATA" = "true" ]; then
-            reported_version="$(./flutter/build/macos/Build/Products/Release/RustDesk.app/Contents/MacOS/RustDesk --version)"
+            reported_version="$(./flutter/build/macos/Build/Products/Release/Linybot.app/Contents/MacOS/Linybot --version)"
             if [ "$reported_version" != "$VERSION" ]; then
-              echo "::error::RustDesk reports version '$reported_version', expected '$VERSION'"
+              echo "::error::Linybot reports version '$reported_version', expected '$VERSION'"
               exit 1
             fi
           fi
-          create-dmg --icon "RustDesk.app" 200 190 --hide-extension "RustDesk.app" --window-size 800 400 --app-drop-link 600 185 rustdesk-${{ env.VERSION }}.dmg ./flutter/build/macos/Build/Products/Release/RustDesk.app
-          codesign --force --options runtime -s ${{ secrets.MACOS_CODESIGN_IDENTITY }} --deep --strict rustdesk-${{ env.VERSION }}.dmg -vvv
-          # notarize the rustdesk-${{ env.VERSION }}.dmg
-          rcodesign notary-submit --api-key-path ${{ github.workspace }}/rustdesk.json  --staple rustdesk-${{ env.VERSION }}.dmg
+          create-dmg --icon "Linybot.app" 200 190 --hide-extension "Linybot.app" --window-size 800 400 --app-drop-link 600 185 linybot-${{ env.VERSION }}.dmg ./flutter/build/macos/Build/Products/Release/Linybot.app
+          codesign --force --options runtime -s ${{ secrets.MACOS_CODESIGN_IDENTITY }} --deep --strict linybot-${{ env.VERSION }}.dmg -vvv
+          # notarize the linybot-${{ env.VERSION }}.dmg
+          rcodesign notary-submit --api-key-path ${{ github.workspace }}/linybot.json  --staple linybot-${{ env.VERSION }}.dmg
 
-      - name: Rename rustdesk
+      - name: Rename linybot
         if: env.UPLOAD_ARTIFACT == 'true'
         shell: bash
         env:
           VERSION: ${{ env.VERSION }}
           ARCH: ${{ matrix.job.arch }}
         run: |
-          if [ -f "rustdesk-${VERSION}.dmg" ]; then
-              mv "rustdesk-${VERSION}.dmg" "rustdesk-${VERSION}-${ARCH}.dmg"
+          if [ -f "linybot-${VERSION}.dmg" ]; then
+              mv "linybot-${VERSION}.dmg" "linybot-${VERSION}-${ARCH}.dmg"
           fi
-          test -f "rustdesk-${VERSION}-${ARCH}.dmg"
+          test -f "linybot-${VERSION}-${ARCH}.dmg"
 
       - name: Upload signed macOS DMG
         if: env.UPLOAD_ARTIFACT == 'true' && env.PUBLISH_UPDATE_METADATA == 'true' && env.MACOS_P12_BASE64 != null
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-${{ matrix.job.arch }}-dmg
-          path: ./rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
+          path: ./linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.dmg
           if-no-files-found: error
 
       - name: Publish DMG package
@@ -1204,12 +1204,12 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk*-${{ matrix.job.arch }}.dmg
+            linybot*-${{ matrix.job.arch }}.dmg
 
   publish-signed-update-metadata:
     needs: [build-for-windows-flutter, build-for-windows-sciter, build-for-macOS]
     runs-on: ubuntu-22.04
-    if: ${{ inputs.upload-artifact && inputs.publish-update-metadata && github.repository == 'rustdesk/rustdesk' }}
+    if: ${{ inputs.upload-artifact && inputs.publish-update-metadata && github.repository == 'linybot/linybot' }}
     concurrency:
       group: signed-update-${{ inputs.upload-tag }}
       cancel-in-progress: false
@@ -1238,7 +1238,7 @@ jobs:
             exit 0
           fi
           assets="$(gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100")"
-          if jq -e 'any(.[][]; .name == "rustdesk-update.json")' <<<"$assets" >/dev/null; then
+          if jq -e 'any(.[][]; .name == "linybot-update.json")' <<<"$assets" >/dev/null; then
             echo "::error::Signed update metadata is already published for ${TAG_NAME}; use a new release tag for corrected artifacts."
             exit 1
           fi
@@ -1272,40 +1272,40 @@ jobs:
 
       - name: Sign update metadata
         env:
-          RUSTDESK_UPDATE_ED25519_SEED: ${{ secrets.RUSTDESK_UPDATE_ED25519_SEED }}
+          LINYBOT_UPDATE_ED25519_SEED: ${{ secrets.LINYBOT_UPDATE_ED25519_SEED }}
         run: |
           python res/update/generate_update_metadata.py sign \
-            --artifact windows x86_64 exe "./artifacts/rustdesk-${VERSION}-x86_64.exe" \
-            --artifact windows x86_64 msi "./artifacts/rustdesk-${VERSION}-x86_64.msi" \
-            --artifact windows aarch64 exe "./artifacts/rustdesk-${VERSION}-aarch64.exe" \
-            --artifact windows aarch64 msi "./artifacts/rustdesk-${VERSION}-aarch64.msi" \
-            --artifact windows x86 exe "./artifacts/rustdesk-${VERSION}-x86-sciter.exe" \
-            --artifact macos aarch64 dmg "./artifacts/rustdesk-${VERSION}-aarch64.dmg" \
-            --artifact macos x86_64 dmg "./artifacts/rustdesk-${VERSION}-x86_64.dmg" \
+            --artifact windows x86_64 exe "./artifacts/linybot-${VERSION}-x86_64.exe" \
+            --artifact windows x86_64 msi "./artifacts/linybot-${VERSION}-x86_64.msi" \
+            --artifact windows aarch64 exe "./artifacts/linybot-${VERSION}-aarch64.exe" \
+            --artifact windows aarch64 msi "./artifacts/linybot-${VERSION}-aarch64.msi" \
+            --artifact windows x86 exe "./artifacts/linybot-${VERSION}-x86-sciter.exe" \
+            --artifact macos aarch64 dmg "./artifacts/linybot-${VERSION}-aarch64.dmg" \
+            --artifact macos x86_64 dmg "./artifacts/linybot-${VERSION}-x86_64.dmg" \
             --version "$VERSION" --release-id "$TAG_NAME" \
-            --package-id rustdesk \
-            --release-base-url https://github.com/rustdesk/rustdesk/releases/download \
+            --package-id linybot \
+            --release-base-url https://github.com/linybot/duojiedian/releases/download \
             --published-at "$(git log -1 --format=%cI)" \
-            --metadata-out ./rustdesk-update.json \
-            --signature-out ./rustdesk-update.json.sig
+            --metadata-out ./linybot-update.json \
+            --signature-out ./linybot-update.json.sig
 
       - name: Verify update metadata
         env:
-          RUSTDESK_UPDATE_ED25519_PUBLIC_KEY: ${{ vars.RUSTDESK_UPDATE_ED25519_PUBLIC_KEY }}
+          LINYBOT_UPDATE_ED25519_PUBLIC_KEY: ${{ vars.LINYBOT_UPDATE_ED25519_PUBLIC_KEY }}
         run: |
           python res/update/generate_update_metadata.py verify \
-            --metadata ./rustdesk-update.json \
-            --signature ./rustdesk-update.json.sig \
-            --artifact "./artifacts/rustdesk-${VERSION}-x86_64.exe" \
-            --artifact "./artifacts/rustdesk-${VERSION}-x86_64.msi" \
-            --artifact "./artifacts/rustdesk-${VERSION}-aarch64.exe" \
-            --artifact "./artifacts/rustdesk-${VERSION}-aarch64.msi" \
-            --artifact "./artifacts/rustdesk-${VERSION}-x86-sciter.exe" \
-            --artifact "./artifacts/rustdesk-${VERSION}-aarch64.dmg" \
-            --artifact "./artifacts/rustdesk-${VERSION}-x86_64.dmg" \
+            --metadata ./linybot-update.json \
+            --signature ./linybot-update.json.sig \
+            --artifact "./artifacts/linybot-${VERSION}-x86_64.exe" \
+            --artifact "./artifacts/linybot-${VERSION}-x86_64.msi" \
+            --artifact "./artifacts/linybot-${VERSION}-aarch64.exe" \
+            --artifact "./artifacts/linybot-${VERSION}-aarch64.msi" \
+            --artifact "./artifacts/linybot-${VERSION}-x86-sciter.exe" \
+            --artifact "./artifacts/linybot-${VERSION}-aarch64.dmg" \
+            --artifact "./artifacts/linybot-${VERSION}-x86_64.dmg" \
             --version "$VERSION" --release-id "$TAG_NAME" \
-            --package-id rustdesk \
-            --release-base-url https://github.com/rustdesk/rustdesk/releases/download
+            --package-id linybot \
+            --release-base-url https://github.com/linybot/duojiedian/releases/download
 
       - name: Upload signed update artifacts
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -1314,13 +1314,13 @@ jobs:
           fail_on_unmatched_files: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./artifacts/rustdesk-${{ env.VERSION }}-x86_64.exe
-            ./artifacts/rustdesk-${{ env.VERSION }}-x86_64.msi
-            ./artifacts/rustdesk-${{ env.VERSION }}-aarch64.exe
-            ./artifacts/rustdesk-${{ env.VERSION }}-aarch64.msi
-            ./artifacts/rustdesk-${{ env.VERSION }}-x86-sciter.exe
-            ./artifacts/rustdesk-${{ env.VERSION }}-aarch64.dmg
-            ./artifacts/rustdesk-${{ env.VERSION }}-x86_64.dmg
+            ./artifacts/linybot-${{ env.VERSION }}-x86_64.exe
+            ./artifacts/linybot-${{ env.VERSION }}-x86_64.msi
+            ./artifacts/linybot-${{ env.VERSION }}-aarch64.exe
+            ./artifacts/linybot-${{ env.VERSION }}-aarch64.msi
+            ./artifacts/linybot-${{ env.VERSION }}-x86-sciter.exe
+            ./artifacts/linybot-${{ env.VERSION }}-aarch64.dmg
+            ./artifacts/linybot-${{ env.VERSION }}-x86_64.dmg
 
       # The release action replaces same-name assets, so keep published sidecars
       # until replacements are ready.
@@ -1330,7 +1330,7 @@ jobs:
           prerelease: true
           fail_on_unmatched_files: true
           tag_name: ${{ env.TAG_NAME }}
-          files: ./rustdesk-update.json.sig
+          files: ./linybot-update.json.sig
 
       # Clients discover the release through metadata, so publish it only after every referenced asset.
       - name: Publish signed update metadata
@@ -1339,7 +1339,7 @@ jobs:
           prerelease: true
           fail_on_unmatched_files: true
           tag_name: ${{ env.TAG_NAME }}
-          files: ./rustdesk-update.json
+          files: ./linybot-update.json
 
   publish_unsigned:
     needs:
@@ -1352,64 +1352,64 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-macos-x86_64
+          name: linybot-unsigned-macos-x86_64
           path: ./
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-macos-aarch64
+          name: linybot-unsigned-macos-aarch64
           path: ./
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-windows-x86_64
+          name: linybot-unsigned-windows-x86_64
           path: ./windows-x86_64/
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-windows-aarch64
+          name: linybot-unsigned-windows-aarch64
           path: ./windows-aarch64/
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-windows-x86
+          name: linybot-unsigned-windows-x86
           path: ./windows-x86/
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-msi-template-x86_64
+          name: linybot-unsigned-msi-template-x86_64
           path: ./msi-template/
 
       - name: Download Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-msi-template-aarch64
+          name: linybot-unsigned-msi-template-aarch64
           path: ./msi-template/
 
       - name: Download Artifacts
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-packer-template-x86_64
+          name: linybot-unsigned-packer-template-x86_64
           path: ./packer-template/
 
       - name: Download Artifacts
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-packer-template-aarch64
+          name: linybot-unsigned-packer-template-aarch64
           path: ./packer-template/
 
       - name: Download Artifacts
         if: env.UPLOAD_ARTIFACT == 'true' && env.SIGN_BASE_URL != '-2'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-unsigned-packer-template-x86
+          name: linybot-unsigned-packer-template-x86
           path: ./packer-template/
 
       - name: Combine unsigned app
@@ -1418,18 +1418,18 @@ jobs:
           if [[ "$SIGN_BASE_URL" != '-2' ]]; then
             packer_template=(packer-template)
           fi
-          tar czf rustdesk-${{ env.VERSION }}-unsigned.tar.gz *.dmg windows-x86_64 windows-aarch64 windows-x86 msi-template "${packer_template[@]}"
+          tar czf linybot-${{ env.VERSION }}-unsigned.tar.gz *.dmg windows-x86_64 windows-aarch64 windows-x86 msi-template "${packer_template[@]}"
 
       - name: Publish unsigned app
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
         with:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
-          files: rustdesk-${{ env.VERSION }}-unsigned.tar.gz
+          files: linybot-${{ env.VERSION }}-unsigned.tar.gz
 
-  build-rustdesk-android:
+  build-linybot-android:
     needs: [generate-bridge]
-    name: build rustdesk android apk ${{ matrix.job.target }}
+    name: build linybot android apk ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     strategy:
       fail-fast: false
@@ -1596,10 +1596,10 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: rustdesk-lib-cache-android # TODO: drop '-android' part after caches are invalidated
+          prefix-key: linybot-lib-cache-android # TODO: drop '-android' part after caches are invalidated
           key: ${{ matrix.job.target }}
 
-      - name: Build rustdesk lib
+      - name: Build linybot lib
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_ROOT: ${{ steps.setup-ndk.outputs.ndk-path }}
@@ -1610,32 +1610,32 @@ jobs:
             aarch64-linux-android)
               ./flutter/ndk_arm64.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
             ;;
             armv7-linux-androideabi)
               ./flutter/ndk_arm.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
             ;;
             x86_64-linux-android)
               ./flutter/ndk_x64.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86_64
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86_64/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
             ;;
             i686-linux-android)
               ./flutter/ndk_x86.sh
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
             ;;
           esac
 
-      - name: Upload Rustdesk library to Artifacts
+      - name: Upload Linybot library to Artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: librustdesk.so.${{ matrix.job.target }}
-          path: ./target/${{ matrix.job.target }}/release/liblibrustdesk.so
+          name: liblinybot.so.${{ matrix.job.target }}
+          path: ./target/${{ matrix.job.target }}/release/libliblinybot.so
 
-      - name: Build rustdesk
+      - name: Build linybot
         shell: bash
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
@@ -1663,43 +1663,43 @@ jobs:
             aarch64-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/arm64-v8a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-arm64 --split-per-abi
-              mv build/app/outputs/flutter-apk/app-arm64-v8a-${{ matrix.job.reltype }}.apk ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
+              mv build/app/outputs/flutter-apk/app-arm64-v8a-${{ matrix.job.reltype }}.apk ../linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
             ;;
             armv7-linux-androideabi)
               mkdir -p ./flutter/android/app/src/main/jniLibs/armeabi-v7a
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-arm --split-per-abi
-              mv build/app/outputs/flutter-apk/app-armeabi-v7a-${{ matrix.job.reltype }}.apk ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
+              mv build/app/outputs/flutter-apk/app-armeabi-v7a-${{ matrix.job.reltype }}.apk ../linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
             ;;
             x86_64-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86_64
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86_64/
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86_64/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-x64 --split-per-abi
-              mv build/app/outputs/flutter-apk/app-x86_64-${{ matrix.job.reltype }}.apk ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
+              mv build/app/outputs/flutter-apk/app-x86_64-${{ matrix.job.reltype }}.apk ../linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
             ;;
             i686-linux-android)
               mkdir -p ./flutter/android/app/src/main/jniLibs/x86
               cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86/
-              cp ./target/${{ matrix.job.target }}/release/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86/librustdesk.so
+              cp ./target/${{ matrix.job.target }}/release/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
               # build flutter
               pushd flutter
               flutter_build_apk "--${{ matrix.job.reltype }}" --target-platform android-x86 --split-per-abi
-              mv build/app/outputs/flutter-apk/app-x86-${{ matrix.job.reltype }}.apk ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
+              mv build/app/outputs/flutter-apk/app-x86-${{ matrix.job.reltype }}.apk ../linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk
             ;;
           esac
           popd
           mkdir -p signed-apk; pushd signed-apk
-          mv ../rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk .
+          mv ../linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.apk .
 
       # https://github.com/r0adkll/sign-android-release/issues/84#issuecomment-1889636075
       - name: Setup sign tool version variable
@@ -1712,7 +1712,7 @@ jobs:
       - uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
         name: Sign app APK
         if: env.ANDROID_SIGNING_KEY != null
-        id: sign-rustdesk
+        id: sign-linybot
         with:
           releaseDirectory: ./signed-apk
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -1727,8 +1727,8 @@ jobs:
         if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
-          path: ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          path: ${{steps.sign-linybot.outputs.signedReleaseFile}}
 
       - name: Publish signed apk package
         if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
@@ -1737,14 +1737,14 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
+            ${{steps.sign-linybot.outputs.signedReleaseFile}}
 
       - name: Upload self-signed apk
         if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
-          path: signed-apk/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          path: signed-apk/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
 
       - name: Publish apk package
         if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true'
@@ -1753,11 +1753,11 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            signed-apk/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+            signed-apk/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
 
-  build-rustdesk-android-universal:
-    needs: [build-rustdesk-android]
-    name: build rustdesk android universal apk
+  build-linybot-android-universal:
+    needs: [build-linybot-android]
+    name: build linybot android universal apk
     if: ${{ inputs.upload-artifact }}
     runs-on: ubuntu-24.04
     env:
@@ -1841,32 +1841,32 @@ jobs:
           name: bridge-artifact
           path: ./
 
-      - name: Download Rustdesk library from Artifacts
+      - name: Download Linybot library from Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: librustdesk.so.aarch64-linux-android
+          name: liblinybot.so.aarch64-linux-android
           path: ./flutter/android/app/src/main/jniLibs/arm64-v8a
 
-      - name: Download Rustdesk library from Artifacts
+      - name: Download Linybot library from Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: librustdesk.so.armv7-linux-androideabi
+          name: liblinybot.so.armv7-linux-androideabi
           path: ./flutter/android/app/src/main/jniLibs/armeabi-v7a
 
-      - name: Download Rustdesk library from Artifacts
+      - name: Download Linybot library from Artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: librustdesk.so.x86_64-linux-android
+          name: liblinybot.so.x86_64-linux-android
           path: ./flutter/android/app/src/main/jniLibs/x86_64
 
-      - name: Download Rustdesk library from Artifacts
+      - name: Download Linybot library from Artifacts
         if: ${{ env.reltype == 'debug' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: librustdesk.so.i686-linux-android
+          name: liblinybot.so.i686-linux-android
           path: ./flutter/android/app/src/main/jniLibs/x86
 
-      - name: Build rustdesk
+      - name: Build linybot
         shell: bash
         env:
           JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
@@ -1876,14 +1876,14 @@ jobs:
           sed -i "s/org.gradle.jvmargs=-Xmx1024M/org.gradle.jvmargs=-Xmx2g/g" ./flutter/android/gradle.properties
           # release builds are signed with the project keystore (flutter/android/key.properties),
           # not the AOSP debug key, so scanners do not see a debug-signed remote-control app
-          mv ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/librustdesk.so
+          mv ./flutter/android/app/src/main/jniLibs/arm64-v8a/libliblinybot.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/arm64-v8a/
-          mv ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/librustdesk.so
+          mv ./flutter/android/app/src/main/jniLibs/armeabi-v7a/libliblinybot.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/arm-linux-androideabi/libc++_shared.so ./flutter/android/app/src/main/jniLibs/armeabi-v7a/
-          mv ./flutter/android/app/src/main/jniLibs/x86_64/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86_64/librustdesk.so
+          mv ./flutter/android/app/src/main/jniLibs/x86_64/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86_64/liblinybot.so
           cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/x86_64-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86_64/
           if [ "${{ env.reltype }}" = "debug" ]; then
-            mv ./flutter/android/app/src/main/jniLibs/x86/liblibrustdesk.so ./flutter/android/app/src/main/jniLibs/x86/librustdesk.so
+            mv ./flutter/android/app/src/main/jniLibs/x86/libliblinybot.so ./flutter/android/app/src/main/jniLibs/x86/liblinybot.so
             cp ${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/i686-linux-android/libc++_shared.so ./flutter/android/app/src/main/jniLibs/x86/
           fi
           # Maven Central rate-limits the shared runner IP (HTTP 429), which the
@@ -1905,7 +1905,7 @@ jobs:
           flutter_build_apk "--${{ env.reltype }}" --target-platform android-arm64,android-arm,android-x64${{ env.x86_target }}
           popd
           mkdir -p signed-apk
-          mv ./flutter/build/app/outputs/flutter-apk/app-${{ env.reltype }}.apk signed-apk/rustdesk-${{ env.VERSION }}-universal${{ env.suffix }}.apk
+          mv ./flutter/build/app/outputs/flutter-apk/app-${{ env.reltype }}.apk signed-apk/linybot-${{ env.VERSION }}-universal${{ env.suffix }}.apk
 
       # https://github.com/r0adkll/sign-android-release/issues/84#issuecomment-1889636075
       - name: Setup sign tool version variable
@@ -1918,7 +1918,7 @@ jobs:
       - uses: r0adkll/sign-android-release@349ebdef58775b1e0d8099458af0816dc79b6407 # v1
         name: Sign app APK
         if: env.ANDROID_SIGNING_KEY != null
-        id: sign-rustdesk
+        id: sign-linybot
         with:
           releaseDirectory: ./signed-apk
           signingKeyBase64: ${{ secrets.ANDROID_SIGNING_KEY }}
@@ -1933,8 +1933,8 @@ jobs:
         if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
-          path: ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          path: ${{steps.sign-linybot.outputs.signedReleaseFile}}
 
       - name: Publish signed apk package
         if: env.ANDROID_SIGNING_KEY != null && env.UPLOAD_ARTIFACT == 'true'
@@ -1943,14 +1943,14 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ${{steps.sign-rustdesk.outputs.signedReleaseFile}}
+            ${{steps.sign-linybot.outputs.signedReleaseFile}}
 
       - name: Upload self-signed apk
         if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
-          path: signed-apk/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
+          path: signed-apk/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.apk
 
       - name: Publish apk package
         if: env.ANDROID_SIGNING_KEY == null && env.UPLOAD_ARTIFACT == 'true'
@@ -1959,11 +1959,11 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            signed-apk/rustdesk-${{ env.VERSION }}-universal${{ env.suffix }}.apk
+            signed-apk/linybot-${{ env.VERSION }}-universal${{ env.suffix }}.apk
 
-  build-rustdesk-linux:
+  build-linybot-linux:
     needs: [generate-bridge]
-    name: build rustdesk linux ${{ matrix.job.target }}
+    name: build linybot linux ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.on }}
     strategy:
       fail-fast: false
@@ -2107,7 +2107,7 @@ jobs:
         shell: bash
 
       - uses: rustdesk-org/run-on-arch-action@d3fcfbb632b84cf7f6bc772bfaaa2c2f4f8789a8 # no release tag; commit 2026-05-26
-        name: Build rustdesk
+        name: Build linybot
         id: vcpkg
         if: matrix.job.arch == 'x86_64' || env.UPLOAD_ARTIFACT == 'true'
         with:
@@ -2252,18 +2252,18 @@ jobs:
               flutter test --no-pub --timeout 60s || exit 1
               popd
             fi
-            for name in rustdesk*??.deb; do
+            for name in linybot*??.deb; do
               mv "$name" "${name%%.deb}-${{ matrix.job.arch }}.deb"
             done
 
             # The rpm must carry libdrmtap, and must not inherit its glibc requirement: the spec
-            # excludes /usr/lib/rustdesk from auto-requires, so hosts whose glibc is older than the
+            # excludes /usr/lib/linybot from auto-requires, so hosts whose glibc is older than the
             # runner's still install it. Everything else here is built against this container's
             # glibc 2.27 (the x86_64 Flutter engine needs 2.18), so on x86_64 any 2.28+ requirement
             # can only have come from libdrmtap; the aarch64 flutter-elinux engine is not measured.
             check_rpm_drm() {
-              if ! rpm -qlp "$1" | grep -qx /usr/lib/rustdesk/libdrmtap.so.0; then
-                echo "::error::$1 has no /usr/lib/rustdesk/libdrmtap.so.0"
+              if ! rpm -qlp "$1" | grep -qx /usr/lib/linybot/libdrmtap.so.0; then
+                echo "::error::$1 has no /usr/lib/linybot/libdrmtap.so.0"
                 exit 1
               fi
               if [[ "${{ matrix.job.arch }}" == "x86_64" ]] && rpm -qpR "$1" | grep -E 'GLIBC_2\.(2[89]|[3-9][0-9])'; then
@@ -2283,7 +2283,7 @@ jobs:
             esac
             HBB=`pwd` rpmbuild ./res/rpm-flutter.spec -bb
             pushd ~/rpmbuild/RPMS/${{ matrix.job.arch }}
-            for name in rustdesk*??.rpm; do
+            for name in linybot*??.rpm; do
                 check_rpm_drm "$name"
                 mv "$name" /workspace/"${name%%.rpm}.rpm"
             done
@@ -2299,7 +2299,7 @@ jobs:
             esac
             HBB=`pwd` rpmbuild ./res/rpm-flutter-suse.spec -bb
             pushd ~/rpmbuild/RPMS/${{ matrix.job.arch }}
-            for name in rustdesk*??.rpm; do
+            for name in linybot*??.rpm; do
                 check_rpm_drm "$name"
                 mv "$name" /workspace/"${name%%.rpm}-suse.rpm"
             done
@@ -2313,23 +2313,23 @@ jobs:
           # Resolve by glob, not from env.VERSION: build.py names the deb from Cargo.toml, so a
           # hardcoded name fails with a bare exit 1 the first time those two drift.
           shopt -s nullglob
-          debs=(rustdesk-*-${{ matrix.job.arch }}.deb)
+          debs=(linybot-*-${{ matrix.job.arch }}.deb)
           if [ "${#debs[@]}" -ne 1 ]; then
-            echo "::error::expected one rustdesk-*-${{ matrix.job.arch }}.deb, found ${#debs[@]}: ${debs[*]-none}"
+            echo "::error::expected one linybot-*-${{ matrix.job.arch }}.deb, found ${#debs[@]}: ${debs[*]-none}"
             exit 1
           fi
           deb="${debs[0]}"
           contents="$(dpkg -c "$deb")"
-          if [[ ! "$contents" =~ usr/lib/rustdesk/libdrmtap\.so\.0\.[0-9]+\.[0-9]+ ]]; then
+          if [[ ! "$contents" =~ usr/lib/linybot/libdrmtap\.so\.0\.[0-9]+\.[0-9]+ ]]; then
             echo "::error::$deb has no versioned libdrmtap.so.0.x.y"
             exit 1
           fi
-          if [[ "$contents" != *"usr/lib/rustdesk/libdrmtap.so.0 ->"* ]]; then
+          if [[ "$contents" != *"usr/lib/linybot/libdrmtap.so.0 ->"* ]]; then
             echo "::error::$deb has no libdrmtap.so.0 soname symlink"
             exit 1
           fi
           rm -rf /tmp/deb && dpkg-deb -R "$deb" /tmp/deb
-          if ! grep -qF /usr/lib/rustdesk/libdrmtap.so.0 /tmp/deb/usr/share/rustdesk/lib/librustdesk.so; then
+          if ! grep -qF /usr/lib/linybot/libdrmtap.so.0 /tmp/deb/usr/share/linybot/lib/liblinybot.so; then
             echo "::error::$deb was not built with the drm feature"
             exit 1
           fi
@@ -2342,8 +2342,8 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk-*.deb
-            rustdesk-*.rpm
+            linybot-*.deb
+            linybot-*.rpm
 
       # x86_64 also uploads on a PR (upload-artifact false), where it is the only way to get at the
       # deb that was just built.
@@ -2351,8 +2351,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: env.UPLOAD_ARTIFACT == 'true' || matrix.job.arch == 'x86_64'
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
-          path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          path: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
 
       # only x86_64 for arch since we can not find newest arm64 docker image to build
       # old arch image does not make sense for arch since it is "arch" which always update to date
@@ -2381,15 +2381,15 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          pkgs=(res/rustdesk-${{ env.VERSION }}*.zst)
+          pkgs=(res/linybot-${{ env.VERSION }}*.zst)
           if [ "${#pkgs[@]}" -eq 0 ]; then
             echo "::error::no archlinux package was built"
             exit 1
           fi
           for pkg in "${pkgs[@]}"; do
             contents="$(tar --zstd -tf "$pkg")"
-            if ! grep -qx 'usr/lib/rustdesk/libdrmtap.so.0' <<<"$contents"; then
-              echo "::error::$pkg has no /usr/lib/rustdesk/libdrmtap.so.0"
+            if ! grep -qx 'usr/lib/linybot/libdrmtap.so.0' <<<"$contents"; then
+              echo "::error::$pkg has no /usr/lib/linybot/libdrmtap.so.0"
               exit 1
             fi
           done
@@ -2402,13 +2402,13 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            res/rustdesk-${{ env.VERSION }}*.zst
+            res/linybot-${{ env.VERSION }}*.zst
 
-  build-rustdesk-linux-sciter:
+  build-linybot-linux-sciter:
     if: ${{ inputs.upload-artifact }}
     needs: [validate-update-metadata-keys]
     runs-on: ${{ matrix.job.on }}
-    name: build-rustdesk-linux-sciter ${{ matrix.job.target }}
+    name: build-linybot-linux-sciter ${{ matrix.job.target }}
     strategy:
       fail-fast: false
       matrix:
@@ -2428,7 +2428,7 @@ jobs:
               arch: armv7,
               target: armv7-unknown-linux-gnueabihf,
               on: ubuntu-22.04-arm,
-              distro: ubuntu18.04-rustdesk,
+              distro: ubuntu18.04-linybot,
               deb_arch: armhf,
               sciter_arch: arm32,
               vcpkg-triplet: arm-linux,
@@ -2479,7 +2479,7 @@ jobs:
           echo "RUST_TOOLCHAIN_VERSION=$RUST_TOOLCHAIN_VERSION" >> $GITHUB_ENV
 
       - uses: rustdesk-org/run-on-arch-action@d3fcfbb632b84cf7f6bc772bfaaa2c2f4f8789a8 # no release tag; commit 2026-05-26
-        name: Build rustdesk sciter binary for ${{ matrix.job.arch }}
+        name: Build linybot sciter binary for ${{ matrix.job.arch }}
         id: vcpkg
         with:
           arch: ${{ matrix.job.arch }}
@@ -2602,7 +2602,7 @@ jobs:
               exit 1
             fi
             head -n 100 "${VCPKG_ROOT}/buildtrees/ffmpeg/build-${{ matrix.job.vcpkg-triplet }}-rel-out.log" || true
-            # build rustdesk
+            # build linybot
             python3 ./res/inline-sciter.py
             export CARGO_INCREMENTAL=0
             # armv7 is the only 32-bit target in this job that links the whole binary, and the
@@ -2618,15 +2618,15 @@ jobs:
             cargo build --locked --features inline${{ matrix.job.extra_features }} --release --bins --jobs 1
             # make debian package
             mkdir -p ./Release
-            mv ./target/release/rustdesk ./Release/rustdesk
+            mv ./target/release/linybot ./Release/linybot
             wget -O ./Release/libsciter-gtk.so https://github.com/c-smile/sciter-sdk/raw/master/bin.lnx/${{ matrix.job.sciter_arch }}/libsciter-gtk.so
             export DEB_ARCH=${{ matrix.job.deb_arch }}
             ./build.py --package ./Release
 
-      - name: Rename rustdesk
+      - name: Rename linybot
         shell: bash
         run: |
-          for name in rustdesk*??.deb; do
+          for name in linybot*??.deb; do
               # use cp to duplicate deb files to fit other packages.
               cp "$name" "${name%%.deb}-${{ matrix.job.arch }}-sciter.deb"
           done
@@ -2638,18 +2638,18 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
+            linybot-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
 
       - name: Upload deb
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: env.UPLOAD_ARTIFACT == 'true'
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
-          path: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
+          path: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}-sciter.deb
 
   build-appimage:
     name: Build appimage ${{ matrix.job.target }}
-    needs: [build-rustdesk-linux]
+    needs: [build-linybot-linux]
     runs-on: ubuntu-22.04
     if: ${{ inputs.upload-artifact }}
     strategy:
@@ -2667,12 +2667,12 @@ jobs:
       - name: Download Binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.deb
           path: .
 
       - name: Rename Binary
         run: |
-          mv rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}.deb appimage/rustdesk.deb
+          mv linybot-${{ env.VERSION }}-${{ matrix.job.arch }}.deb appimage/linybot.deb
 
       - name: Build appimage package
         shell: bash
@@ -2698,13 +2698,13 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            ./appimage/rustdesk-${{ env.VERSION }}-*.AppImage
+            ./appimage/linybot-${{ env.VERSION }}-*.AppImage
 
   build-flatpak:
     name: Build flatpak ${{ matrix.job.target }}${{ matrix.job.suffix }}
     needs:
-      - build-rustdesk-linux
-      - build-rustdesk-linux-sciter
+      - build-linybot-linux
+      - build-linybot-linux-sciter
     runs-on: ${{ matrix.job.on }}
     if: ${{ inputs.upload-artifact }}
     strategy:
@@ -2743,15 +2743,15 @@ jobs:
       - name: Download Binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.deb
+          name: linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.deb
           path: .
 
       - name: Rename Binary
         run: |
-          mv rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.deb flatpak/rustdesk.deb
+          mv linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.deb flatpak/linybot.deb
 
       - uses: rustdesk-org/run-on-arch-action@d3fcfbb632b84cf7f6bc772bfaaa2c2f4f8789a8 # no release tag; commit 2026-05-26
-        name: Build rustdesk flatpak package for ${{ matrix.job.arch }}
+        name: Build linybot flatpak package for ${{ matrix.job.arch }}
         id: flatpak
         with:
           arch: ${{ matrix.job.arch }}
@@ -2774,8 +2774,8 @@ jobs:
             # package
             pushd flatpak
             git clone https://github.com/flathub/shared-modules.git --depth=1
-            flatpak-builder --user --install-deps-from=flathub -y --force-clean --repo=repo ./build ./rustdesk.json
-            flatpak build-bundle ./repo rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.flatpak com.rustdesk.RustDesk
+            flatpak-builder --user --install-deps-from=flathub -y --force-clean --repo=repo ./build ./linybot.json
+            flatpak build-bundle ./repo linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.flatpak com.linybot.Linybot
 
       - name: Publish flatpak package
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -2783,12 +2783,12 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            flatpak/rustdesk-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.flatpak
+            flatpak/linybot-${{ env.VERSION }}-${{ matrix.job.arch }}${{ matrix.job.suffix }}.flatpak
 
-  build-rustdesk-web:
+  build-linybot-web:
     if: False
     needs: [validate-update-metadata-keys]
-    name: build-rustdesk-web
+    name: build-linybot-web
     runs-on: ubuntu-22.04
     permissions:
       contents: read
@@ -2856,7 +2856,7 @@ jobs:
           cp ../web/README.md web
           # TODO: Remove the following line when the web is almost complete.
           echo -e "\n\nThis build is for preview and not full functionality." >> web/README.md
-          dir_name="rustdesk-${{ env.VERSION }}-${{ env.RELEASE_NAME }}"
+          dir_name="linybot-${{ env.VERSION }}-${{ env.RELEASE_NAME }}"
           mv web "${dir_name}" && tar czf "${dir_name}".tar.gz "${dir_name}"
           sha256sum "${dir_name}".tar.gz
           popd
@@ -2868,4 +2868,4 @@ jobs:
           prerelease: true
           tag_name: ${{ env.TAG_NAME }}
           files: |
-            flutter/build/rustdesk-${{ env.VERSION }}-${{ env.RELEASE_NAME }}.tar.gz
+            flutter/build/linybot-${{ env.VERSION }}-${{ env.RELEASE_NAME }}.tar.gz

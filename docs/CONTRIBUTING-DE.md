@@ -1,11 +1,11 @@
-# Beiträge zu RustDesk
+# Beiträge zu Linybot
 
-RustDesk begrüßt Beiträge von jedem. Hier sind die Richtlinien, wenn Sie uns
+Linybot begrüßt Beiträge von jedem. Hier sind die Richtlinien, wenn Sie uns
 helfen möchten:
 
 ## Beiträge
 
-Beiträge zu RustDesk oder seinen Abhängigkeiten sollten in Form von Pull
+Beiträge zu Linybot oder seinen Abhängigkeiten sollten in Form von Pull
 Requests auf GitHub erfolgen. Jeder Pull Request wird von einem Hauptakteur
 (jemand mit der Erlaubnis, Korrekturen einzubringen) geprüft und entweder in den
 Hauptbaum eingefügt oder Feedback für notwendige Änderungen gegeben. Alle
@@ -43,8 +43,8 @@ Spezifische Git-Anweisungen finden Sie im [GitHub-Workflow](https://github.com/s
 
 ## Verhalten
 
-https://github.com/rustdesk/rustdesk/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## Kommunikation
 
-RustDesk-Mitarbeiter arbeiten häufig im [Discord](https://discord.gg/nDceKgxnkV).
+Linybot-Mitarbeiter arbeiten häufig im [Discord](https://discord.gg/nDceKgxnkV).

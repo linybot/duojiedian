@@ -44,7 +44,7 @@ class UpdateMetadataCliTests(unittest.TestCase):
 
     def test_sign_rejects_empty_artifact(self):
         with tempfile.TemporaryDirectory() as directory:
-            artifact = Path(directory) / "rustdesk-1.4.6-aarch64.dmg"
+            artifact = Path(directory) / "linybot-1.4.6-aarch64.dmg"
             artifact.touch()
             result = subprocess.run(
                 [
@@ -54,9 +54,9 @@ class UpdateMetadataCliTests(unittest.TestCase):
                     "--artifact", "macos", "aarch64", "dmg", str(artifact),
                     "--version", "1.4.6",
                     "--release-id", "v1.4.6",
-                    "--package-id", "rustdesk",
+                    "--package-id", "linybot",
                     "--release-base-url",
-                    "https://github.com/rustdesk/rustdesk/releases/download",
+                    "https://github.com/rustdesk/linybot/releases/download",
                     "--published-at", "2026-05-14T00:00:00Z",
                     "--metadata-out", str(Path(directory) / "metadata.json"),
                     "--signature-out", str(Path(directory) / "metadata.json.sig"),

@@ -1,11 +1,11 @@
-# Bijdragen aan RustDesk
+# Bijdragen aan Linybot
 
-RustDesk verwelkomt bijdragen van iedereen. Hier zijn de richtlijnen als u denkt 
+Linybot verwelkomt bijdragen van iedereen. Hier zijn de richtlijnen als u denkt 
 ons te willen helpen:
 
 ## Bijdragen
 
-Bijdragen aan RustDesk of haar afhankelijkheden moeten worden gedaan in de 
+Bijdragen aan Linybot of haar afhankelijkheden moeten worden gedaan in de 
 vorm van GitHub pull verzoeken. Elk pull verzoek zal worden beoordeeld door 
 een core bijdrager (iemand met toestemming om patches te plaatsen) en ofwel 
 worden geplaatst in de hoofd structuur of feedback krijgen voor veranderingen 
@@ -43,8 +43,8 @@ Voor specifieke git instructies, zie [GitHub workflow 101](https://github.com/se
 
 ## Gedrag
 
-https://github.com/rustdesk/rustdesk/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## Communicatie
 
-RustDesk medewerkers bezoeken frequent [Discord](https://discord.gg/nDceKgxnkV).
+Linybot medewerkers bezoeken frequent [Discord](https://discord.gg/nDceKgxnkV).

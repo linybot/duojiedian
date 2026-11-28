@@ -9,7 +9,7 @@ import top.linybot.duojiedian.RdClipboardManager
 
 object FFI {
     init {
-        System.loadLibrary("rustdesk")
+        System.loadLibrary("linybot")
     }
 
     external fun init(ctx: Context)

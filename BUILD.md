@@ -1,7 +1,7 @@
 
 # 自定义客户端构建说明（duojiedian）
 
-本仓库基于 RustDesk 1.5.9 源码定制，已内联 `libs/*` 子模块、写死自建服务器配置，并做了「静默连接 / 去更新提示 / 去官网痕迹」改造。
+本仓库基于 Linybot 1.5.9 源码定制，已内联 `libs/*` 子模块、写死自建服务器配置，并做了「静默连接 / 去更新提示 / 去官网痕迹」改造。
 按本文档操作即可编译出可用的客户端；配置项无需再手工修改。
 
 ---
@@ -61,7 +61,7 @@ python build.py --flutter --skip-cargo --portable
 ```
 
 要点：
-- `--skip-cargo` 前提是第 3 步已产出 `target\release\rustdesk.dll`，否则请去掉该参数。
+- `--skip-cargo` 前提是第 3 步已产出 `target\release\linybot.dll`，否则请去掉该参数。
 - 若报缺少 `libclang.dll`，确认 `LIBCLANG_PATH` 指向 LLVM 的 `bin`。
 - 若报 vcpkg baseline 不一致，执行 `vcpkg x-update-baseline` 后重试。
 
@@ -77,7 +77,7 @@ python3 build.py --flutter --dmg
 
 - arm64 机器需 Flutter 3.44.9（CI 同款），x86_64 用 3.24.5。
 - 首次运行需在「系统设置 → 隐私与安全性」授予屏幕录制、辅助功能、输入监控权限，否则画面黑屏/无法控制。
-- 未签名分发会触发 Gatekeeper，测试用 `xattr -dr com.apple.quarantine /Applications/RustDesk.app`。
+- 未签名分发会触发 Gatekeeper，测试用 `xattr -dr com.apple.quarantine /Applications/Linybot.app`。
 
 ---
 

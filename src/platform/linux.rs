@@ -103,7 +103,7 @@ lazy_static::lazy_static! {
     static ref GNOME_MONITOR_LAYOUT_MODE_CACHE: std::sync::Mutex<
         Option<(Instant, Option<GnomeMonitorLayoutMode>)>,
     > = Default::default();
-    // https://github.com/rustdesk/rustdesk/issues/13705
+    // https://github.com/rustdesk/linybot/issues/13705
     // Check if `sudo -E` actually preserves environment.
     //
     // This flag is only used by `run_as_user()` (root service -> user session). If the current process is not
@@ -118,7 +118,7 @@ lazy_static::lazy_static! {
             log::warn!("Not running as root, SUDO_E_PRESERVES_ENV check skipped");
             false
         } else {
-            let key = format!("__RUSTDESK_SUDO_E_TEST_{}", std::process::id());
+            let key = format!("__LINYBOT_SUDO_E_TEST_{}", std::process::id());
             let val = "1";
             let expected = format!("{key}={val}");
             Command::new("sudo")
@@ -347,7 +347,7 @@ static X_UNEXPECTED_ERROR_DETECTED: AtomicBool = AtomicBool::new(false);
 
 /// Custom X error handler that catches BadWindow errors (error_code == 3) instead of
 /// letting the default handler terminate the process.
-/// See issue: https://github.com/rustdesk/rustdesk/issues/9003
+/// See issue: https://github.com/rustdesk/linybot/issues/9003
 unsafe extern "C" fn handle_x_error(_display: *mut c_void, event: *mut XErrorEvent) -> c_int {
     if !event.is_null() && (*event).error_code == X11_BAD_WINDOW {
         X_BAD_WINDOW_DETECTED.store(true, Ordering::SeqCst);
@@ -411,7 +411,7 @@ pub fn is_login_screen_wayland() -> bool {
 /// does, so the login gate does not refuse a greeter the service serves over X11.
 #[cfg(feature = "drm")]
 fn is_wayland_tty_greeter(sid: &str, uid: &str) -> bool {
-    std::env::var("RUSTDESK_FORCED_DISPLAY_SERVER").as_deref() != Ok(DISPLAY_SERVER_X11)
+    std::env::var("LINYBOT_FORCED_DISPLAY_SERVER").as_deref() != Ok(DISPLAY_SERVER_X11)
         && has_wayland_socket(uid)
         && is_tty_greeter_session(sid)
 }
@@ -490,7 +490,7 @@ mod tty_greeter_tests {
         assert!(!is_tty_greeter_props("Type=tty\nClass=user\n"));
         assert!(!is_tty_greeter_props("Type=wayland\nClass=greeter\n"));
 
-        let dir = std::env::temp_dir().join(format!("rustdesk-tty-greeter-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("linybot-tty-greeter-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("wayland-1.lock"), b"").unwrap();
@@ -507,7 +507,7 @@ mod tty_greeter_tests {
 /// The root service sets this for a greeter `--server`: that process reads the greeter account's
 /// config, which has not synced from root yet when `IS_X11` is computed.
 #[cfg(feature = "drm")]
-pub(crate) const ENV_DRM_CAPTURE: &str = "RUSTDESK_DRM_CAPTURE";
+pub(crate) const ENV_DRM_CAPTURE: &str = "LINYBOT_DRM_CAPTURE";
 
 /// DRM capture is compiled in and `allow-drm-capture` is on. While it is off, the drm paths in
 /// this crate run as a build without it. The Wayland enumeration in `base` and `scrap` does not
@@ -526,13 +526,13 @@ pub fn drm_capture_enabled() -> bool {
     }
 }
 
-/// An explicit `RUSTDESK_FORCED_DISPLAY_SERVER` is an operator override, and the root service
+/// An explicit `LINYBOT_FORCED_DISPLAY_SERVER` is an operator override, and the root service
 /// forwards it to the per-user server on purpose: the greeter correction may only fix an
 /// AUTO-detected answer, never argue with the operator — a half-applied override would leave
 /// `get_display_server()` and the DRM routing gates disagreeing with each other.
 #[cfg(feature = "drm")]
 pub(crate) fn display_server_forced() -> bool {
-    std::env::var("RUSTDESK_FORCED_DISPLAY_SERVER").is_ok()
+    std::env::var("LINYBOT_FORCED_DISPLAY_SERVER").is_ok()
 }
 
 /// X11 as far as the DRM path is concerned: a Wayland greeter is not, unless the operator
@@ -1110,11 +1110,11 @@ fn try_start_server_(desktop: Option<&Desktop>) -> ResultType<Option<Child>> {
                 envs.push(("DBUS_SESSION_BUS_ADDRESS", desktop.dbus.clone()));
             }
             if let Ok(forced_display_server) =
-                std::env::var("RUSTDESK_FORCED_DISPLAY_SERVER")
+                std::env::var("LINYBOT_FORCED_DISPLAY_SERVER")
             {
                 if !forced_display_server.is_empty() {
                     envs.push((
-                        "RUSTDESK_FORCED_DISPLAY_SERVER",
+                        "LINYBOT_FORCED_DISPLAY_SERVER",
                         forced_display_server,
                     ));
                 }
@@ -1210,7 +1210,7 @@ fn set_x11_env(desktop: &Desktop) {
 }
 
 #[inline]
-fn stop_rustdesk_servers() {
+fn stop_linybot_servers() {
     let _ = run_cmds(&format!(
         r##"ps -ef | grep -E '{} +--server' | awk '{{print $2}}' | xargs -r kill -9"##,
         crate::get_app_name().to_lowercase(),
@@ -1280,15 +1280,15 @@ fn should_start_server(
 }
 
 // to-do: stop_server(&mut user_server); may not stop child correctly
-// stop_rustdesk_servers() is just a temp solution here.
+// stop_linybot_servers() is just a temp solution here.
 fn force_stop_server() {
-    stop_rustdesk_servers();
+    stop_linybot_servers();
     sleep_millis(super::SERVICE_INTERVAL);
 }
 
 pub fn start_os_service() {
     check_if_stop_service();
-    stop_rustdesk_servers();
+    stop_linybot_servers();
     start_uinput_service();
 
     std::thread::spawn(|| {
@@ -1407,7 +1407,7 @@ pub fn start_os_service() {
 
         let keeps_session = sid == desktop.sid;
         if keeps_session {
-            // for fixing https://github.com/rustdesk/rustdesk/issues/3129 to avoid too much dbus calling,
+            // for fixing https://github.com/rustdesk/linybot/issues/3129 to avoid too much dbus calling,
             sleep_millis(500);
         } else {
             sleep_millis(super::SERVICE_INTERVAL);
@@ -2408,7 +2408,7 @@ mod desktop {
     /// A compositor that runs Xwayland without exporting `XAUTHORITY` (wlroots, e.g. Hyprland)
     /// still hands out a usable session through the Wayland side. Requiring xauth there never
     /// succeeded, so every refresh ran the retry loop to the end.
-    /// https://github.com/rustdesk/rustdesk/issues/15952
+    /// https://github.com/rustdesk/linybot/issues/15952
     fn is_session_env_complete(envs: &std::collections::HashMap<&str, String>) -> bool {
         let value = |key: &str| envs.get(key).map_or("", |v| v.as_str());
         !value(ENV_KEY_DISPLAY).is_empty()
@@ -2459,7 +2459,7 @@ mod desktop {
         fn adopt_wayland_tty_greeter(&mut self) {
             if self.tty_greeter
                 && !self.is_wayland()
-                && std::env::var("RUSTDESK_FORCED_DISPLAY_SERVER").as_deref()
+                && std::env::var("LINYBOT_FORCED_DISPLAY_SERVER").as_deref()
                     != Ok(DISPLAY_SERVER_X11)
                 && super::has_wayland_socket(&self.uid)
             {
@@ -3129,7 +3129,7 @@ pub fn uninstall_service(show_new_window: bool, _: bool) -> bool {
     log::info!("Uninstalling service...");
     let cp = switch_service(true);
     let app_name = crate::get_app_name().to_lowercase();
-    // systemctl kill rustdesk --tray, execute cp first
+    // systemctl kill linybot --tray, execute cp first
     if !run_cmds_privileged(&format!(
         "{cp} systemctl disable {app_name}; systemctl stop {app_name};"
     )) {
@@ -3181,7 +3181,7 @@ pub fn check_autostart_config() -> ResultType<()> {
     let app_name = crate::get_app_name().to_lowercase();
     let path = format!("{home}/.config/autostart");
     let file = format!("{path}/{app_name}.desktop");
-    // https://github.com/rustdesk/rustdesk/issues/4863
+    // https://github.com/rustdesk/linybot/issues/4863
     std::fs::remove_file(&file).ok();
     /*
         std::fs::create_dir_all(&path).ok();
@@ -3262,7 +3262,7 @@ pub fn is_x11() -> bool {
 fn get_shortcuts_inhibitor_app_id() -> String {
     if is_flatpak() {
         // In Flatpak, FLATPAK_ID is set automatically by the runtime to the app ID
-        // (e.g., "com.rustdesk.RustDesk"). This is the most reliable source.
+        // (e.g., "com.linybot.Linybot"). This is the most reliable source.
         // Fall back to constructing from app name if not available.
         match std::env::var("FLATPAK_ID") {
             Ok(id) if !id.is_empty() => format!("{}.desktop", id),

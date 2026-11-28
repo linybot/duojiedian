@@ -195,7 +195,7 @@ async fn selected_folder_transfers_directly_and_preserves_data_on_publish_failur
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let output = std::env::temp_dir().join(format!(
-        "rustdesk-documents-{}",
+        "linybot-documents-{}",
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()

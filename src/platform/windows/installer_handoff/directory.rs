@@ -35,7 +35,7 @@ pub(in crate::platform::windows) fn path() -> ResultType<PathBuf> {
     let temporary = windows.join("Temp");
     let parent = temporary_parent(&temporary)?;
     Ok(parent.join(format!(
-        "rustdesk-install-{}",
+        "linybot-install-{}",
         uuid::Uuid::new_v4().simple()
     )))
 }
@@ -181,7 +181,7 @@ mod tests {
         // The user-owned parent allows cleanup through DELETE_CHILD. AccessCheck
         // below checks the child's DACL, not that separate parent permission.
         let directory = std::env::temp_dir().join(format!(
-            "rustdesk_installer_acl_{}",
+            "linybot_installer_acl_{}",
             uuid::Uuid::new_v4().simple()
         ));
         create(&directory).expect("production directory creation should succeed");

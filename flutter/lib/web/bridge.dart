@@ -92,7 +92,7 @@ class CursorShape {
   });
 }
 
-class RustdeskImpl {
+class LinybotImpl {
   // The core answers through the callback, before callMethod returns.
   Future<CursorShape?> sessionGetCursorShape(
       {required UuidValue sessionId, required String id, dynamic hint}) {
@@ -1709,8 +1709,8 @@ class RustdeskImpl {
   }
 
   bool isCustomClient({dynamic hint}) {
-    // is_custom_client() checks if app name is not "RustDesk"
-    return mainGetAppNameSync(hint: hint) != "RustDesk";
+    // is_custom_client() checks if app name is not "Linybot"
+    return mainGetAppNameSync(hint: hint) != "Linybot";
   }
 
   bool isDisableSettings({dynamic hint}) {

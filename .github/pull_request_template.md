@@ -1,7 +1,7 @@
 <!--
 Read these before opening a PR. They apply whether the code is AI-generated or written by hand:
-- Feature PRs need maintainer approval first: https://github.com/rustdesk/rustdesk/discussions/17223
-- End-to-end testing on real devices is mandatory: https://github.com/rustdesk/rustdesk/discussions/17225
+- Feature PRs need maintainer approval first: https://github.com/rustdesk/linybot/discussions/17223
+- End-to-end testing on real devices is mandatory: https://github.com/rustdesk/linybot/discussions/17225
 
 PRs that skip these requirements, leave the sections below empty, or have an
 unjustifiably large regression surface may be closed without review.
@@ -25,7 +25,7 @@ guarantee that the implementation will be accepted.
 
 Fixes #
 
-Feature approval ([required for features](https://github.com/rustdesk/rustdesk/discussions/17223)):
+Feature approval ([required for features](https://github.com/rustdesk/linybot/discussions/17223)):
 
 ## What and why
 
@@ -90,8 +90,8 @@ New code that only runs when the new feature is used does not need to be listed.
 
 ## Checklist
 
-- [ ] Features: a maintainer approved this in a discussion before I started, as required by [#17223](https://github.com/rustdesk/rustdesk/discussions/17223). Unapproved feature PRs may be closed without review.
-- [ ] I tested this end to end on real devices on every platform it touches, as required by [#17225](https://github.com/rustdesk/rustdesk/discussions/17225), and the results above come from those runs.
+- [ ] Features: a maintainer approved this in a discussion before I started, as required by [#17223](https://github.com/rustdesk/linybot/discussions/17223). Unapproved feature PRs may be closed without review.
+- [ ] I tested this end to end on real devices on every platform it touches, as required by [#17225](https://github.com/rustdesk/linybot/discussions/17225), and the results above come from those runs.
 - [ ] Bug fixes: I reproduced the original issue on master and confirmed this PR fixes it.
 - [ ] UI added, changed, or affected: I uploaded a video or screenshots above that prove the change.
 - [ ] I re-tested the existing functionality listed under "Regression surface".

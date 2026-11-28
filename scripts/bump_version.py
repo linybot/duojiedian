@@ -6,7 +6,7 @@
 
 会更新:
     - Cargo.toml / libs/portable/Cargo.toml 的 package version
-    - Cargo.lock 中 rustdesk 与 rustdesk-portable-packer 两个 workspace 包版本
+    - Cargo.lock 中 linybot 与 linybot-portable-packer 两个 workspace 包版本
     - flutter/pubspec.yaml 的 version（含 build number）
     - .github/workflows/*.yml 中的 VERSION 环境变量
     - appimage/AppImageBuilder-*.yml 的 version 字段
@@ -19,7 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-CRATES = ["rustdesk", "rustdesk-portable-packer"]
+CRATES = ["linybot", "linybot-portable-packer"]
 
 
 def read(p: Path) -> str:

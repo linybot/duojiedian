@@ -708,7 +708,7 @@ async fn run_service(_arguments: Vec<OsString>) -> ResultType<()> {
             let current_active_session = unsafe { get_current_session(share_rdp()) };
             if session_id != current_active_session {
                 session_id = current_active_session;
-                // https://github.com/rustdesk/rustdesk/discussions/10039
+                // https://github.com/rustdesk/linybot/discussions/10039
                 let count = ipc::get_port_forward_session_count(1000).await.unwrap_or(0);
                 if count == 0 {
                     h_process = launch_server(session_id, true).await.unwrap_or(NULL);
@@ -1250,8 +1250,8 @@ pub fn portable_service_logon_helper_paths() -> Option<(PathBuf, PathBuf)> {
         .home_dir()
         .join("AppData")
         .join("Local")
-        .join("rustdesk-sciter");
-    let dst = dir.join("rustdesk.exe");
+        .join("linybot-sciter");
+    let dst = dir.join("linybot.exe");
     Some((dir, dst))
 }
 
@@ -1608,7 +1608,7 @@ fn get_after_install(
     let nested_exe = escape_nested_cmd_ampersands(exe);
 
     // reg delete HKEY_CURRENT_USER\Software\Classes for
-    // https://github.com/rustdesk/rustdesk/commit/f4bdfb6936ae4804fc8ab1cf560db192622ad01a
+    // https://github.com/rustdesk/linybot/commit/f4bdfb6936ae4804fc8ab1cf560db192622ad01a
     // and https://github.com/leanflutter/uni_links_desktop/blob/1b72b0226cec9943ca8a84e244c149773f384e46/lib/src/protocol_registrar_impl_windows.dart#L30
     let hcu = RegKey::predef(HKEY_CURRENT_USER);
     hcu.delete_subkey_all(format!("Software\\Classes\\{}", exe))
@@ -1713,7 +1713,7 @@ pub fn install_me(options: &str, path: String, silent: bool, debug: bool) -> Res
     }
     // The elevated runner expands this to `%~f0.dir`, beside its protected copy.
     // Do not stage privileged shortcut artifacts in the user-writable `%TEMP%`.
-    let tmp_path = "%RUSTDESK_OUTPUT_DIR%".to_owned();
+    let tmp_path = "%LINYBOT_OUTPUT_DIR%".to_owned();
     let (mk_shortcut_commands, mk_shortcut_file) = staged_shortcut_commands(
         shortcut_bytes(&exe, None, shortcut_icon_location.as_deref())?,
         &format!("{app_name}.lnk"),
@@ -1761,7 +1761,7 @@ copy /Y \"{tmp_path}\\Uninstall {app_name}.lnk\" \"{start_menu}\\\"
     // https://docs.microsoft.com/zh-cn/windows/win32/msi/uninstall-registry-key?redirectedfrom=MSDNa
     // https://www.windowscentral.com/how-edit-registry-using-command-prompt-windows-10
     // https://www.tenforums.com/tutorials/70903-add-remove-allowed-apps-through-windows-firewall-windows-10-a.html
-    // Note: without if exist, the bat may exit in advance on some Windows7 https://github.com/rustdesk/rustdesk/issues/895
+    // Note: without if exist, the bat may exit in advance on some Windows7 https://github.com/rustdesk/linybot/issues/895
     let dels = format!(
         "
 if exist \"{tmp_path}\\{app_name}.lnk\" del /f /q \"{tmp_path}\\{app_name}.lnk\"
@@ -2075,8 +2075,8 @@ fn get_public_base_dir() -> PathBuf {
 #[inline]
 pub fn get_custom_client_staging_dir() -> PathBuf {
     get_public_base_dir()
-        .join("RustDesk")
-        .join("RustDeskCustomClientStaging")
+        .join("Linybot")
+        .join("LinybotCustomClientStaging")
 }
 
 /// Removes the custom client staging directory.
@@ -2085,7 +2085,7 @@ pub fn get_custom_client_staging_dir() -> PathBuf {
 ///
 /// Rationale
 /// - The staging directory only contains a small `custom.txt`, leaving it is harmless.
-/// - Deleting directories under a public location (e.g., C:\\ProgramData\\RustDesk) is
+/// - Deleting directories under a public location (e.g., C:\\ProgramData\\Linybot) is
 ///   susceptible to TOCTOU attacks if an unprivileged user can replace the path with a
 ///   symlink/junction between checks and deletion.
 ///
@@ -2257,7 +2257,7 @@ pub fn bootstrap() -> bool {
     }
     #[cfg(not(debug_assertions))]
     {
-        // This function will cause `'sciter.dll' was not found neither in PATH nor near the current executable.` when debugging RustDesk.
+        // This function will cause `'sciter.dll' was not found neither in PATH nor near the current executable.` when debugging Linybot.
         // Only call set_safe_load_dll() on Windows 10 or greater
         if is_win_10_or_greater() {
             set_safe_load_dll()
@@ -2369,7 +2369,7 @@ pub fn create_shortcut(id: &str) -> ResultType<()> {
     }
 
     let exe = std::env::current_exe()?.to_str().unwrap_or("").to_owned();
-    // https://github.com/rustdesk/rustdesk/issues/13735
+    // https://github.com/rustdesk/linybot/issues/13735
     // Replace ':' with '_' for filename since ':' is not allowed in Windows filenames
     // https://github.com/rustdesk/hbb_common/blob/8b0e25867375ba9e6bff548acf44fe6d6ffa7c0e/src/config.rs#L1384
     let filename = id.replace(':', "_");
@@ -3227,11 +3227,11 @@ mod cert {
     use hbb_common::ResultType;
 
     extern "C" {
-        fn DeleteRustDeskTestCertsW();
+        fn DeleteLinybotTestCertsW();
     }
     pub fn uninstall_cert() -> ResultType<()> {
         unsafe {
-            DeleteRustDeskTestCertsW();
+            DeleteLinybotTestCertsW();
         }
         Ok(())
     }
@@ -3336,7 +3336,7 @@ impl Drop for WakeLock {
 // and every miss spawns one more tray icon.
 //
 // The case confirmed in #15689: `run_after_run_cmds()` spawns the tray in the
-// caller's own context, so installing or toggling the service from a RustDesk
+// caller's own context, so installing or toggling the service from a Linybot
 // that was itself started elevated leaves a high integrity tray behind. A main
 // window started normally afterwards runs at medium integrity and cannot open
 // that process with `PROCESS_QUERY_INFORMATION | PROCESS_VM_READ`. sysinfo then
@@ -3465,7 +3465,7 @@ fn get_install_service_commands(path: &str, exe: &str) -> ResultType<InstallComm
 chcp 65001
 taskkill /F /IM {app_name}.exe{filter}
 {tray_shortcut_commands}
-copy /Y \"%RUSTDESK_OUTPUT_DIR%\\{app_name} Tray.lnk\" \"%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\\"
+copy /Y \"%LINYBOT_OUTPUT_DIR%\\{app_name} Tray.lnk\" \"%PROGRAMDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\\"
 {import_config}
 {create_service}
     ",
@@ -3685,7 +3685,7 @@ reg add {subkey} /f /v EstimatedSize /t REG_DWORD /d {size}
     // md \"{path}\"
     //
     // We need `taskkill` because:
-    // 1. There may be some other processes like `rustdesk --connect` are running.
+    // 1. There may be some other processes like `linybot --connect` are running.
     // 2. Sometimes, the main window and the tray icon are showing
     // while I cannot find them by `tasklist` or the methods above.
     // There's should be 4 processes running: service, server, tray and main window.
@@ -3785,12 +3785,12 @@ fn normalize_msi_product_code(value: &str) -> Option<String> {
 
 fn build_msi_uninstall_command(product_code: &str) -> String {
     format!(
-        "set \"RUSTDESK_MSI_EXIT_CODE=\"\n\
+        "set \"LINYBOT_MSI_EXIT_CODE=\"\n\
 MsiExec.exe /X {product_code} /norestart REBOOT=ReallySuppress\n\
-set \"RUSTDESK_MSI_EXIT_CODE=%ERRORLEVEL%\"\n\
-if \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_REQUIRED}\" echo MSI uninstall succeeded with a reboot recommendation; continuing without reboot.\n\
-if \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_INITIATED}\" echo MSI uninstall succeeded with a reboot request; continuing without forcing reboot.\n\
-if not \"%RUSTDESK_MSI_EXIT_CODE%\"==\"0\" if not \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_REQUIRED}\" if not \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_INITIATED}\" exit /b %RUSTDESK_MSI_EXIT_CODE%\n\
+set \"LINYBOT_MSI_EXIT_CODE=%ERRORLEVEL%\"\n\
+if \"%LINYBOT_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_REQUIRED}\" echo MSI uninstall succeeded with a reboot recommendation; continuing without reboot.\n\
+if \"%LINYBOT_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_INITIATED}\" echo MSI uninstall succeeded with a reboot request; continuing without forcing reboot.\n\
+if not \"%LINYBOT_MSI_EXIT_CODE%\"==\"0\" if not \"%LINYBOT_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_REQUIRED}\" if not \"%LINYBOT_MSI_EXIT_CODE%\"==\"{MSI_EXIT_SUCCESS_REBOOT_INITIATED}\" exit /b %LINYBOT_MSI_EXIT_CODE%\n\
 ver > nul"
     )
 }
@@ -4063,7 +4063,7 @@ pub fn handle_service_control() -> Option<std::process::ExitCode> {
         std::process::ExitCode::SUCCESS
     } else {
         eprintln!(
-            "RustDesk service control failed: {}",
+            "Linybot service control failed: {}",
             std::io::Error::from_raw_os_error(error as i32)
         );
         std::process::ExitCode::FAILURE
@@ -4176,9 +4176,9 @@ pub fn try_remove_temp_update_files() {
             let path = entry.path();
             if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
                 // Match downloaded installers, verified copies, and abandoned handoff scripts.
-                if (file_name.starts_with("rustdesk-")
+                if (file_name.starts_with("linybot-")
                     && (file_name.ends_with(".msi") || file_name.ends_with(".exe")))
-                    || (file_name.starts_with("rustdesk_install_") && file_name.ends_with(".bat"))
+                    || (file_name.starts_with("linybot_install_") && file_name.ends_with(".bat"))
                 {
                     // Skip files modified within the last hour to avoid deleting files being downloaded
                     if let Ok(metadata) = std::fs::metadata(&path) {
@@ -4243,7 +4243,7 @@ pub fn message_box(text: &str) {
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();
-    let caption = "RustDesk Output"
+    let caption = "Linybot Output"
         .encode_utf16()
         .chain(std::iter::once(0))
         .collect::<Vec<u16>>();
@@ -4396,8 +4396,8 @@ pub fn is_x64() -> bool {
     unsafe { sys_info.u.s().wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 }
 }
 
-pub fn try_kill_rustdesk_main_window_process() -> ResultType<()> {
-    // Kill rustdesk.exe without extra arg, should only be called by --server
+pub fn try_kill_linybot_main_window_process() -> ResultType<()> {
+    // Kill linybot.exe without extra arg, should only be called by --server
     // We can find the exact process which occupies the ipc, see more from https://github.com/winsiderss/systeminformer
     let app_name = crate::get_app_name().to_lowercase();
     log::info!("try kill main window process");
@@ -4445,7 +4445,7 @@ pub fn try_kill_rustdesk_main_window_process() -> ResultType<()> {
         log::info!("kill process success: {:?}, pid = {:?}", p.cmd(), p.pid());
         return Ok(());
     }
-    bail!("failed to find rustdesk main window process");
+    bail!("failed to find linybot main window process");
 }
 
 fn nt_terminate_process(process_id: DWORD) -> ResultType<()> {
@@ -4628,7 +4628,7 @@ pub mod reg_display_settings {
         fn registry_recovery_rejects_external_targets_before_access() {
             for force in [false, true] {
                 let recovery = RegRecovery {
-                    path: format!("SOFTWARE\\RustDesk\\{}", uuid::Uuid::new_v4()),
+                    path: format!("SOFTWARE\\Linybot\\{}", uuid::Uuid::new_v4()),
                     key: "Recent".to_owned(),
                     old: (vec![0x22; 4], RegType::REG_DWORD as isize),
                     new: (vec![0x11; 4], RegType::REG_DWORD as isize),
@@ -4764,7 +4764,7 @@ pub fn send_raw_data_to_printer(printer_name: Option<String>, data: Vec<u8>) -> 
             data.len() as c_ulong,
         );
         if res != 0 {
-            bail!("Failed to send data to the printer, see logs in C:\\Windows\\temp\\test_rustdesk.log for more details.");
+            bail!("Failed to send data to the printer, see logs in C:\\Windows\\temp\\test_linybot.log for more details.");
         } else {
             log::info!("Successfully sent data to the printer");
         }
@@ -4874,10 +4874,10 @@ fn get_pids_with_args_from_wmic_output<S2: AsRef<str>>(
     // CommandLine=
     // ProcessId=34668
     //
-    // CommandLine="C:\Program Files\RustDesk\RustDesk.exe" --tray
+    // CommandLine="C:\Program Files\Linybot\Linybot.exe" --tray
     // ProcessId=13728
     //
-    // CommandLine="C:\Program Files\RustDesk\RustDesk.exe"
+    // CommandLine="C:\Program Files\Linybot\Linybot.exe"
     // ProcessId=10136
     let mut pids = Vec::new();
     let mut proc_found = false;

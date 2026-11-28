@@ -60,7 +60,7 @@ fn extract_verified_dmg(verified_dmg: &VerifiedDmg, target_dir: &str) -> ResultT
 #[test]
 fn verified_dmg_extracts_from_named_copy() {
     let test_dir = std::env::temp_dir().join(format!(
-        "rustdesk-verified-dmg-extract-test-{}-{}",
+        "linybot-verified-dmg-extract-test-{}-{}",
         std::process::id(),
         hbb_common::rand::random::<u64>()
     ));
@@ -88,7 +88,7 @@ fn verified_dmg_extracts_from_named_copy() {
 #[test]
 fn verified_dmg_guard_ejects_on_drop() {
     let test_dir = std::env::temp_dir().join(format!(
-        "rustdesk-verified-dmg-eject-test-{}-{}",
+        "linybot-verified-dmg-eject-test-{}-{}",
         std::process::id(),
         hbb_common::rand::random::<u64>()
     ));
@@ -116,7 +116,7 @@ fn verified_dmg_guard_ejects_on_drop() {
 #[test]
 fn verified_dmg_rejects_replaced_path() {
     let test_dir = std::env::temp_dir().join(format!(
-        "rustdesk-verified-dmg-replacement-test-{}-{}",
+        "linybot-verified-dmg-replacement-test-{}-{}",
         std::process::id(),
         hbb_common::rand::random::<u64>()
     ));
@@ -140,7 +140,7 @@ fn verified_dmg_rejects_replaced_path() {
 #[test]
 fn verified_dmg_rejects_in_place_mutation() {
     let test_dir = std::env::temp_dir().join(format!(
-        "rustdesk-verified-dmg-mutation-test-{}-{}",
+        "linybot-verified-dmg-mutation-test-{}-{}",
         std::process::id(),
         hbb_common::rand::random::<u64>()
     ));
@@ -166,8 +166,8 @@ fn verified_dmg_rejects_in_place_mutation() {
 #[test]
 fn verified_dmg_rejects_sha256_mismatch() {
     let file_path =
-        std::env::temp_dir().join(format!("rustdesk-verified-dmg-test-{}", std::process::id()));
-    std::fs::write(&file_path, b"rustdesk").unwrap();
+        std::env::temp_dir().join(format!("linybot-verified-dmg-test-{}", std::process::id()));
+    std::fs::write(&file_path, b"linybot").unwrap();
     let result = copy_and_verify_dmg_file(
         &file_path.to_string_lossy(),
         "0000000000000000000000000000000000000000000000000000000000000000",
@@ -181,14 +181,14 @@ fn verified_dmg_rejects_sha256_mismatch() {
 #[test]
 fn verified_dmg_rejects_symlink() {
     let test_dir = std::env::temp_dir().join(format!(
-        "rustdesk-verified-dmg-symlink-test-{}",
+        "linybot-verified-dmg-symlink-test-{}",
         std::process::id()
     ));
     let _ = std::fs::remove_dir_all(&test_dir);
     std::fs::create_dir_all(&test_dir).unwrap();
     let target_path = test_dir.join("target.dmg");
     let link_path = test_dir.join("update.dmg");
-    std::fs::write(&target_path, b"rustdesk").unwrap();
+    std::fs::write(&target_path, b"linybot").unwrap();
     std::os::unix::fs::symlink(&target_path, &link_path).unwrap();
     let result = copy_and_verify_dmg_file(
         &link_path.to_string_lossy(),

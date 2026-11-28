@@ -46,15 +46,15 @@ import java.nio.ByteBuffer
 import kotlin.math.max
 import kotlin.math.min
 
-const val DEFAULT_NOTIFY_TITLE = "RustDesk"
+const val DEFAULT_NOTIFY_TITLE = "Linybot"
 const val DEFAULT_NOTIFY_TEXT = "Service is running"
 const val DEFAULT_NOTIFY_ID = 1
 const val NOTIFY_ID_OFFSET = 100
 
 // [duojiedian] A fixed deployment does not want connection banners, sounds or
 // vibration: every notification this service posts uses this silent channel.
-const val SILENT_NOTIFY_CHANNEL_ID = "RustDeskSilent"
-const val SILENT_NOTIFY_CHANNEL_NAME = "RustDesk (silent)"
+const val SILENT_NOTIFY_CHANNEL_ID = "LinybotSilent"
+const val SILENT_NOTIFY_CHANNEL_NAME = "Linybot (silent)"
 
 const val MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_VP9
 
@@ -191,7 +191,7 @@ class MainService : Service() {
     private var serviceHandler: Handler? = null
 
     private val powerManager: PowerManager by lazy { applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager }
-    private val wakeLock: PowerManager.WakeLock by lazy { powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "rustdesk:wakelock")}
+    private val wakeLock: PowerManager.WakeLock by lazy { powerManager.newWakeLock(PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.SCREEN_BRIGHT_WAKE_LOCK, "linybot:wakelock")}
 
     companion object {
         private var _isReady = false // media permission ready status
@@ -650,7 +650,7 @@ class MainService : Service() {
             virtualDisplay?.release()
         }
         // suface needs to be release after `imageReader.close()` to imageReader access released surface
-        // https://github.com/rustdesk/rustdesk/issues/4118#issuecomment-1515666629
+        // https://github.com/rustdesk/linybot/issues/4118#issuecomment-1515666629
         imageReader?.close()
         imageReader = null
         videoEncoder?.let {
@@ -663,7 +663,7 @@ class MainService : Service() {
         }
         videoEncoder = null
         // suface needs to be release after `imageReader.close()` to imageReader access released surface
-        // https://github.com/rustdesk/rustdesk/issues/4118#issuecomment-1515666629
+        // https://github.com/rustdesk/linybot/issues/4118#issuecomment-1515666629
         surface?.release()
 
         // release audio
@@ -745,7 +745,7 @@ class MainService : Service() {
                 true
             } else {
                 val display = mp.createVirtualDisplay(
-                    "RustDeskVD",
+                    "LinybotVD",
                     SCREEN_INFO.width, SCREEN_INFO.height, SCREEN_INFO.dpi, VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                     s, null, null
                 )
@@ -829,7 +829,7 @@ class MainService : Service() {
                 channelId,
                 channelName, NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "RustDesk Service Channel"
+                description = "Linybot Service Channel"
                 setShowBadge(false)
                 enableVibration(false)
                 enableLights(false)

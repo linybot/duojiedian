@@ -54,7 +54,7 @@ pub enum GrabState {
 pub type NotifyMessageBox = fn(String, String, String, String) -> dyn Future<Output = ()>;
 
 // the executable name of the portable version
-pub const PORTABLE_APPNAME_RUNTIME_ENV_KEY: &str = "RUSTDESK_APPNAME";
+pub const PORTABLE_APPNAME_RUNTIME_ENV_KEY: &str = "LINYBOT_APPNAME";
 
 pub const PLATFORM_WINDOWS: &str = "Windows";
 pub const PLATFORM_LINUX: &str = "Linux";
@@ -1783,10 +1783,10 @@ pub(crate) fn release_id_from_update_url(update_url: &str) -> ResultType<String>
     };
     let segments = segments.collect::<Vec<_>>();
     let release_id = match segments.as_slice() {
-        ["rustdesk", "rustdesk", "releases", "tag", release_id] => *release_id,
-        ["rustdesk", "rustdesk", "releases", "tag", release_id, ""] => *release_id,
+        ["linybot", "duojiedian", "releases", "tag", release_id] => *release_id,
+        ["linybot", "duojiedian", "releases", "tag", release_id, ""] => *release_id,
         _ => bail!(
-            "Update URL is not a RustDesk release tag URL: {}",
+            "Update URL is not a Linybot release tag URL: {}",
             update_url
         ),
     };
@@ -1864,7 +1864,7 @@ fn process_software_update_check_response(bytes: Bytes) -> ResultType<()> {
 #[tokio::main(flavor = "current_thread")]
 pub async fn do_check_software_update() -> hbb_common::ResultType<()> {
     let (request, url) =
-        hbb_common::version_check_request(hbb_common::VER_TYPE_RUSTDESK_CLIENT.to_string());
+        hbb_common::version_check_request(hbb_common::VER_TYPE_LINYBOT_CLIENT.to_string());
     let proxy_conf = Config::get_socks();
     let tls_url = get_url_for_tls(&url, &proxy_conf);
     let tls_type = get_cached_tls_type(tls_url);
@@ -1914,8 +1914,8 @@ pub fn get_app_name() -> String {
 }
 
 #[inline]
-pub fn is_rustdesk() -> bool {
-    hbb_common::config::APP_NAME.read().unwrap().eq("RustDesk")
+pub fn is_linybot() -> bool {
+    hbb_common::config::APP_NAME.read().unwrap().eq("Linybot")
 }
 
 #[inline]
@@ -3001,7 +3001,7 @@ pub fn check_process(arg: &str, mut same_uid: bool) -> bool {
         if same_uid && p.user_id() != my_uid {
             continue;
         }
-        // on mac, p.cmd() get "/Applications/RustDesk.app/Contents/MacOS/RustDesk", "XPC_SERVICE_NAME=com.carriez.RustDesk_server"
+        // on mac, p.cmd() get "/Applications/Linybot.app/Contents/MacOS/Linybot", "XPC_SERVICE_NAME=com.carriez.Linybot_server"
         let parg = if p.cmd().len() <= 1 { "" } else { &p.cmd()[1] };
         if arg.is_empty() {
             if !parg.starts_with("--") {
@@ -3224,10 +3224,10 @@ impl ThrottledInterval {
     }
 }
 
-pub type RustDeskInterval = ThrottledInterval;
+pub type LinybotInterval = ThrottledInterval;
 
 #[inline]
-pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
+pub fn linybot_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
@@ -3432,7 +3432,7 @@ pub fn get_builtin_option(key: &str) -> String {
 
 #[inline]
 pub fn is_custom_client() -> bool {
-    get_app_name() != "RustDesk"
+    get_app_name() != "Linybot"
 }
 
 pub fn verify_login(_raw: &str, _id: &str) -> bool {
@@ -3844,8 +3844,8 @@ mod tests {
     }
 
     #[test]
-    fn parses_stable_rustdesk_release_url() {
-        let update_url = "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6";
+    fn parses_stable_linybot_release_url() {
+        let update_url = "https://github.com/linybot/duojiedian/releases/tag/v1.4.6";
 
         assert_eq!(release_id_from_update_url(update_url).unwrap(), "v1.4.6");
         assert_eq!(display_version_from_release_id("v1.4.6").unwrap(), "1.4.6");
@@ -3858,19 +3858,19 @@ mod tests {
     #[test]
     fn rejects_untrusted_release_urls_and_unstable_versions() {
         for update_url in [
-            "http://github.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com:8443/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com:443/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://user@github.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://example.com/rustdesk/rustdesk/releases/tag/v1.4.6",
-            "https://github.com/other/rustdesk/releases/tag/v1.4.6",
+            "http://github.com/rustdesk/linybot/releases/tag/v1.4.6",
+            "https://github.com:8443/linybot/linybot/releases/tag/v1.4.6",
+            "https://github.com:443/linybot/linybot/releases/tag/v1.4.6",
+            "https://user@github.com/rustdesk/linybot/releases/tag/v1.4.6",
+            "https://example.com/linybot/linybot/releases/tag/v1.4.6",
+            "https://github.com/other/linybot/releases/tag/v1.4.6",
             "https://github.com/rustdesk/other/releases/tag/v1.4.6",
-            "https://github.com/rustdesk/rustdesk/releases/download/v1.4.6/rustdesk.exe",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6?x=1",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6#asset",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1.4.6/extra",
-            "https://github.com/rustdesk/rustdesk/releases/tag/v1%2F4%2F6",
-            "https://github.com/rustdesk/rustdesk/releases/tag/%2e%2e",
+            "https://github.com/rustdesk/linybot/releases/download/v1.4.6/linybot.exe",
+            "https://github.com/rustdesk/linybot/releases/tag/v1.4.6?x=1",
+            "https://github.com/rustdesk/linybot/releases/tag/v1.4.6#asset",
+            "https://github.com/rustdesk/linybot/releases/tag/v1.4.6/extra",
+            "https://github.com/rustdesk/linybot/releases/tag/v1%2F4%2F6",
+            "https://github.com/rustdesk/linybot/releases/tag/%2e%2e",
         ] {
             assert!(release_id_from_update_url(update_url).is_err());
         }
@@ -3959,10 +3959,10 @@ mod tests {
     // The clock is paused, so a stalled runner cannot make two ticks look close together.
     #[allow(non_snake_case)]
     #[tokio::test(start_paused = true)]
-    async fn test_RustDesk_interval_sleep() {
+    async fn test_Linybot_interval_sleep() {
         let base_intervals = [interval_maker, interval_at_maker];
         for (i, maker) in base_intervals.into_iter().enumerate() {
-            let mut timer = rustdesk_interval(maker());
+            let mut timer = linybot_interval(maker());
             let mut times = Vec::new();
             sleep(Duration::from_secs(3)).await;
             loop {
@@ -3990,7 +3990,7 @@ mod tests {
     }
 
     #[test]
-    fn test_is_public_matches_rustdesk_root_domain() {
+    fn test_is_public_matches_linybot_root_domain() {
         assert!(is_public("rustdesk.com/"));
         assert!(is_public("rustdesk.com:21117"));
         assert!(is_public("api.rustdesk.com:21117"));

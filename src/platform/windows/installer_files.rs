@@ -222,7 +222,7 @@ pub(super) mod tests {
     #[test]
     fn cancelled_staging_removes_files_without_parent_delete_permission() {
         use windows::Win32::Security::{ImpersonateLoggedOnUser, RevertToSelf};
-        let root = std::env::temp_dir().join(format!("rustdesk-cancel-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("linybot-cancel-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
         let path = root.join("package.tmp");
         let file = ProtectedInstallFile::new(&path, b"cancelled update").unwrap();
@@ -275,11 +275,11 @@ pub(super) mod tests {
     #[test]
     fn staged_files_protect_contents_and_remove_unverified_data() {
         const HASH: &str = "304ca1638c5effa6832e0e15b958a8f74847efe4df9c3f3187216e921c168fed";
-        let root = std::env::temp_dir().join(format!("rustdesk-staging-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("linybot-staging-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
         let path = root.join("input.tmp");
         let file =
-            ProtectedInstallFile::create(&path, &mut io::Cursor::new(b"rustdesk"), Some(HASH))
+            ProtectedInstallFile::create(&path, &mut io::Cursor::new(b"linybot"), Some(HASH))
                 .unwrap();
         assert_eq!(
             ordinary_owner_access(file.path()),
@@ -289,7 +289,7 @@ pub(super) mod tests {
             ordinary_owner_access(file.directory()),
             (FILE_GENERIC_READ | FILE_GENERIC_EXECUTE | FILE_ADD_FILE | FILE_ADD_SUBDIRECTORY).0
         );
-        assert_eq!(fs::read(file.path()).unwrap(), b"rustdesk");
+        assert_eq!(fs::read(file.path()).unwrap(), b"linybot");
         assert!(ProtectedInstallFile::new(&path, b"replacement").is_err());
         let rejected = root.join("rejected.tmp");
         assert!(ProtectedInstallFile::create(
@@ -408,7 +408,7 @@ pub(super) mod tests {
     fn released_input_directory_rejects_replacement() {
         use windows::Win32::Security::{ImpersonateLoggedOnUser, RevertToSelf};
 
-        let root = std::env::temp_dir().join(format!("rustdesk-copy-{}", uuid::Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("linybot-copy-{}", uuid::Uuid::new_v4()));
         fs::create_dir(&root).unwrap();
         let requested = root.join("package 中文 !&^@().tmp");
         let mut input = ProtectedInstallFile::new(&requested, b"verified installer").unwrap();

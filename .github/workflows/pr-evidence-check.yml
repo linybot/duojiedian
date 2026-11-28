@@ -28,9 +28,9 @@ jobs:
           script: |
             const MARKER = '<!-- pr-evidence-check -->';
             const LABEL = 'needs-evidence';
-            const APPROVAL_POLICY = 'https://github.com/rustdesk/rustdesk/discussions/17223';
-            const TESTING_POLICY = 'https://github.com/rustdesk/rustdesk/discussions/17225';
-            const TEMPLATE = 'https://github.com/rustdesk/rustdesk/blob/master/.github/pull_request_template.md';
+            const APPROVAL_POLICY = 'https://github.com/rustdesk/linybot/discussions/17223';
+            const TESTING_POLICY = 'https://github.com/rustdesk/linybot/discussions/17225';
+            const TEMPLATE = 'https://github.com/rustdesk/linybot/blob/master/.github/pull_request_template.md';
             const pr = context.payload.pull_request;
             const { owner, repo } = context.repo;
             const issue_number = pr.number;
@@ -112,8 +112,8 @@ jobs:
               const POLICIES = ['17223', '17225'];
               const approval = heading(/^Feature approval/m).replace(/\[required for features\]\([^)]*\)/, '');
               const refs = [
-                ...approval.matchAll(/(?:#|rustdesk\/rustdesk\/discussions\/)(\d+)/g),
-                ...body.matchAll(/rustdesk\/rustdesk\/discussions\/(\d+)/g),
+                ...approval.matchAll(/(?:#|linybot\/linybot\/discussions\/)(\d+)/g),
+                ...body.matchAll(/linybot\/linybot\/discussions\/(\d+)/g),
               ].map(m => m[1]).filter(n => !POLICIES.includes(n));
               if (refs.length === 0) {
                 missing.push(`**Feature approval**: a link to the discussion where a maintainer approved this feature ([why](${APPROVAL_POLICY})).`);

@@ -12,7 +12,7 @@ use std::path::Path;
 
 pub use file::{copy_and_verify_update_file_sha256, VerifiedUpdateFile};
 
-const VERIFIED_UPDATE_FILE_PREFIX: &str = "rustdesk-verified-";
+const VERIFIED_UPDATE_FILE_PREFIX: &str = "linybot-verified-";
 const VERIFIED_EXE_FILENAME: &str = "update.exe";
 const VERIFIED_MSI_FILENAME: &str = "update.msi";
 const VERIFIED_UPDATE_COPY_FAILURE_EXIT_CODE: u32 = 0x5253_0009;
@@ -79,10 +79,10 @@ fn launch_verified_exe(exe: &str, expected_sha256: &str) -> ResultType<()> {
     let update = ProtectedInstallFile::copy_verified(Path::new(exe), expected_sha256)?;
     let source = path_for_cmd_environment(update.path())?;
     let commands = format!(
-        "set \"RUSTDESK_VERIFIED_EXE_SOURCE={source}\"\r\n\
-         set \"RUSTDESK_VERIFIED_EXE=%RUSTDESK_OUTPUT_DIR%\\{VERIFIED_EXE_FILENAME}\"\r\n\
-         copy /B /Y \"%RUSTDESK_VERIFIED_EXE_SOURCE%\" \"%RUSTDESK_VERIFIED_EXE%\" > nul || exit /b {VERIFIED_UPDATE_COPY_FAILURE_EXIT_CODE}\r\n\
-         start \"\" /wait \"%RUSTDESK_VERIFIED_EXE%\" --update || exit /b {VERIFIED_EXE_LAUNCH_FAILURE_EXIT_CODE}"
+        "set \"LINYBOT_VERIFIED_EXE_SOURCE={source}\"\r\n\
+         set \"LINYBOT_VERIFIED_EXE=%LINYBOT_OUTPUT_DIR%\\{VERIFIED_EXE_FILENAME}\"\r\n\
+         copy /B /Y \"%LINYBOT_VERIFIED_EXE_SOURCE%\" \"%LINYBOT_VERIFIED_EXE%\" > nul || exit /b {VERIFIED_UPDATE_COPY_FAILURE_EXIT_CODE}\r\n\
+         start \"\" /wait \"%LINYBOT_VERIFIED_EXE%\" --update || exit /b {VERIFIED_EXE_LAUNCH_FAILURE_EXIT_CODE}"
     );
     run_cmds(
         InstallCommands {
@@ -119,14 +119,14 @@ fn verified_msi_install_commands(msi: &Path, quiet: bool) -> ResultType<String> 
         " INSTALLPRINTER=0"
     };
     Ok(format!(
-        "set \"RUSTDESK_VERIFIED_MSI_SOURCE={source}\"\r\n\
-         set \"RUSTDESK_VERIFIED_MSI=%RUSTDESK_OUTPUT_DIR%\\{VERIFIED_MSI_FILENAME}\"\r\n\
-         copy /B /Y \"%RUSTDESK_VERIFIED_MSI_SOURCE%\" \"%RUSTDESK_VERIFIED_MSI%\" > nul || exit /b {VERIFIED_UPDATE_COPY_FAILURE_EXIT_CODE}\r\n\
-         msiexec.exe /i \"%RUSTDESK_VERIFIED_MSI%\"{quiet_args}{printer_args} REBOOT=ReallySuppress /norestart\r\n\
-         set \"RUSTDESK_MSI_EXIT_CODE=%ERRORLEVEL%\"\r\n\
-         if \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{reboot_initiated}\" exit /b {success}\r\n\
-         if \"%RUSTDESK_MSI_EXIT_CODE%\"==\"{reboot_required}\" exit /b {success}\r\n\
-         exit /b %RUSTDESK_MSI_EXIT_CODE%",
+        "set \"LINYBOT_VERIFIED_MSI_SOURCE={source}\"\r\n\
+         set \"LINYBOT_VERIFIED_MSI=%LINYBOT_OUTPUT_DIR%\\{VERIFIED_MSI_FILENAME}\"\r\n\
+         copy /B /Y \"%LINYBOT_VERIFIED_MSI_SOURCE%\" \"%LINYBOT_VERIFIED_MSI%\" > nul || exit /b {VERIFIED_UPDATE_COPY_FAILURE_EXIT_CODE}\r\n\
+         msiexec.exe /i \"%LINYBOT_VERIFIED_MSI%\"{quiet_args}{printer_args} REBOOT=ReallySuppress /norestart\r\n\
+         set \"LINYBOT_MSI_EXIT_CODE=%ERRORLEVEL%\"\r\n\
+         if \"%LINYBOT_MSI_EXIT_CODE%\"==\"{reboot_initiated}\" exit /b {success}\r\n\
+         if \"%LINYBOT_MSI_EXIT_CODE%\"==\"{reboot_required}\" exit /b {success}\r\n\
+         exit /b %LINYBOT_MSI_EXIT_CODE%",
         success = ERROR_SUCCESS.0,
         reboot_initiated = ERROR_SUCCESS_REBOOT_INITIATED.0,
         reboot_required = ERROR_SUCCESS_REBOOT_REQUIRED.0,

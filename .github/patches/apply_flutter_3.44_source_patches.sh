@@ -3,7 +3,7 @@
 #
 # Windows arm64 needs Flutter >= 3.44 (the first stable release shipping an arm64 Dart SDK +
 # engine), and macOS arm64 builds with 3.44 for its NSTextInputContext crash fix
-# (https://github.com/rustdesk/rustdesk/issues/16817). 3.44 renamed DialogTheme/TabBarTheme ->
+# (https://github.com/rustdesk/linybot/issues/16817). 3.44 renamed DialogTheme/TabBarTheme ->
 # *Data and needs newer extended_text/google_fonts. Every other platform is still on Flutter
 # 3.24.5, where the old names/versions are required, so these changes are kept OUT of the
 # committed sources and applied here instead.
@@ -11,7 +11,7 @@
 # 3.44 also makes desktop text fields select all their text each time they regain focus, which
 # 3.24 did only on web. A dialog stacked on another (the 2FA code over the login dialog) bounces
 # focus on every rebuild, so each typed digit replaced the last
-# (https://github.com/rustdesk/rustdesk/issues/17143). DialogTextField keeps 3.24's desktop
+# (https://github.com/rustdesk/linybot/issues/17143). DialogTextField keeps 3.24's desktop
 # behavior; 3.24 has no selectAllOnFocus parameter, hence the patch.
 #
 # Used by BOTH arm64 builds (flutter-build.yml) and their shared bridge artifact (bridge.yml) so

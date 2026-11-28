@@ -17,7 +17,7 @@ fn installer_path_uses_windows_temp_unless_redirected() {
 
 #[test]
 fn junction_installer_parent_uses_program_data_for_staging() {
-    let root = std::env::temp_dir().join(format!("rustdesk-junction-{}", uuid::Uuid::new_v4()));
+    let root = std::env::temp_dir().join(format!("linybot-junction-{}", uuid::Uuid::new_v4()));
     fs::create_dir(&root).unwrap();
     let link = root.join("redirected");
     let mut results = Vec::new();
@@ -41,7 +41,7 @@ fn junction_installer_parent_uses_program_data_for_staging() {
     for result in results {
         let parent = result.unwrap();
         assert_eq!(parent, get_known_folder(&FOLDERID_ProgramData).unwrap());
-        let path = parent.join(format!("rustdesk-fallback-{}.tmp", uuid::Uuid::new_v4()));
+        let path = parent.join(format!("linybot-fallback-{}.tmp", uuid::Uuid::new_v4()));
         let staged = ProtectedInstallFile::new(&path, b"installer").unwrap();
         let staged_path = staged.path().to_owned();
         let staged_directory = staged.directory().to_owned();

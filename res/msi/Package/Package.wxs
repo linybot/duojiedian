@@ -23,14 +23,13 @@
 		<CustomAction Id="BlockSelfInstalledApp" Error="!(loc.AnotherAppDialogDescription)" />
 
 		<!-- User Interface -->
-		<WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+		<!-- [duojiedian] silent install: no dialog set is referenced, so a double
+		     click installs with the default per-machine layout and only shows the
+		     progress bar (msiexec /qn stays fully silent as well). -->
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER_INNER" />
 
-		<ui:WixUI Id="UI_MyInstallDialog" InstallDirectory="INSTALLFOLDER_INNER" />
-		<UIRef Id="WixUI_ErrorProgressText" />
-
-		<InstallUISequence>
-			<Show Dialog="UI_AnotherAppDialog" Before="WelcomeDlg" Condition="NOT Installed AND (APP_WINDOWS_INSTALLER=&quot;#0&quot; OR APP_WINDOWS_INSTALLER32=&quot;#0&quot;)"/>
-		</InstallUISequence>
+		<!-- [duojiedian] no InstallUISequence dialogs: the self-installed-app check
+		     runs in the execute sequence only, so the MSI never stops at a wizard. -->
 
 		<InstallExecuteSequence>
 			<Custom Action="BlockSelfInstalledApp" After="AppSearch" Condition="NOT Installed AND (APP_WINDOWS_INSTALLER=&quot;#0&quot; OR APP_WINDOWS_INSTALLER32=&quot;#0&quot;)" />

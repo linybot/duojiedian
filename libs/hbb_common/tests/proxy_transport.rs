@@ -30,7 +30,7 @@ fn tls_acceptor() -> TlsAcceptor {
 }
 
 async fn proxy_connection(bind: &str, tls_type: TlsType, fixed_local_port: bool) {
-    *APP_NAME.write().unwrap() = format!("RustDesk-proxy-review-{}", std::process::id());
+    *APP_NAME.write().unwrap() = format!("Linybot-proxy-review-{}", std::process::id());
     OVERWRITE_SETTINGS
         .write()
         .unwrap()
@@ -122,7 +122,7 @@ async fn https_nativetls_with_fixed_local_port() {
 
 #[tokio::test]
 async fn https_reconnects_for_tls_fallback() {
-    *APP_NAME.write().unwrap() = format!("RustDesk-proxy-review-{}", std::process::id());
+    *APP_NAME.write().unwrap() = format!("Linybot-proxy-review-{}", std::process::id());
     OVERWRITE_SETTINGS
         .write()
         .unwrap()

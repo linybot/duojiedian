@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
 SCRIPT = Path(__file__).with_name("generate_update_metadata.py")
-OFFICIAL_RELEASE_BASE_URL = "https://github.com/rustdesk/rustdesk/releases/download"
+OFFICIAL_RELEASE_BASE_URL = "https://github.com/rustdesk/linybot/releases/download"
 
 
 class GenerateUpdateMetadataTest(unittest.TestCase):
@@ -36,12 +36,12 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
 
     def run_script(self, *args, seed=None, public_key=None):
         env = os.environ.copy()
-        env.pop("RUSTDESK_UPDATE_ED25519_SEED", None)
-        env.pop("RUSTDESK_UPDATE_ED25519_PUBLIC_KEY", None)
+        env.pop("LINYBOT_UPDATE_ED25519_SEED", None)
+        env.pop("LINYBOT_UPDATE_ED25519_PUBLIC_KEY", None)
         if seed is not None:
-            env["RUSTDESK_UPDATE_ED25519_SEED"] = seed
+            env["LINYBOT_UPDATE_ED25519_SEED"] = seed
         if public_key is not None:
-            env["RUSTDESK_UPDATE_ED25519_PUBLIC_KEY"] = public_key
+            env["LINYBOT_UPDATE_ED25519_PUBLIC_KEY"] = public_key
         return subprocess.run(
             [sys.executable, str(SCRIPT), *args],
             cwd=SCRIPT.parents[2],
@@ -50,7 +50,7 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
             capture_output=True,
         )
 
-    def artifact(self, name="rustdesk-1.4.6-x86_64.exe", data=b"rustdesk"):
+    def artifact(self, name="linybot-1.4.6-x86_64.exe", data=b"linybot"):
         path = self.root / name
         path.write_bytes(data)
         return path
@@ -61,12 +61,12 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
         *,
         version="1.4.6",
         release_id="v1.4.6",
-        package_id="rustdesk",
+        package_id="linybot",
         release_base_url=OFFICIAL_RELEASE_BASE_URL,
         seed=None,
     ):
-        metadata = self.root / "rustdesk-update.json"
-        signature = self.root / "rustdesk-update.json.sig"
+        metadata = self.root / "linybot-update.json"
+        signature = self.root / "linybot-update.json.sig"
         args = ["sign"]
         for platform, arch, file_format, path in artifacts:
             args.extend(["--artifact", platform, arch, file_format, str(path)])
@@ -98,7 +98,7 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
         artifacts,
         *,
         public_key=None,
-        package_id="rustdesk",
+        package_id="linybot",
         release_base_url=OFFICIAL_RELEASE_BASE_URL,
     ):
         args = [
@@ -136,7 +136,7 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
 
     def test_signs_and_verifies_release_artifacts(self):
         exe = self.artifact()
-        dmg = self.artifact("rustdesk-1.4.6-aarch64.dmg", b"dmg")
+        dmg = self.artifact("linybot-1.4.6-aarch64.dmg", b"dmg")
         specs = [("windows", "x86_64", "exe", exe), ("macos", "aarch64", "dmg", dmg)]
 
         metadata, signature, signed = self.sign(specs)
@@ -154,7 +154,7 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
         artifact.write_bytes(b"tampered")
         self.assertNotEqual(self.verify(metadata, signature, [artifact]).returncode, 0)
 
-        artifact.write_bytes(b"rustdesk")
+        artifact.write_bytes(b"linybot")
         data = json.loads(metadata.read_text(encoding="utf-8"))
         data["published_at"] = "2026-05-15T00:00:00Z"
         metadata.write_text(json.dumps(data), encoding="utf-8")
@@ -185,9 +185,9 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
         self.assertNotEqual(self.sign(duplicate)[2].returncode, 0)
 
     def test_signs_and_verifies_custom_release_identity(self):
-        package_id = "com.example.rustdesk-custom"
+        package_id = "com.example.linybot-custom"
         release_base_url = "https://updates.example.com/releases/download"
-        artifact = self.artifact("rustdesk-custom-1.4.6-aarch64.dmg", b"dmg")
+        artifact = self.artifact("linybot-custom-1.4.6-aarch64.dmg", b"dmg")
 
         metadata, signature, signed = self.sign(
             [("macos", "aarch64", "dmg", artifact)],
@@ -212,7 +212,7 @@ class GenerateUpdateMetadataTest(unittest.TestCase):
         )
 
     def test_rejects_unsafe_custom_release_policy(self):
-        artifact = self.artifact("rustdesk-custom-1.4.6-aarch64.dmg", b"dmg")
+        artifact = self.artifact("linybot-custom-1.4.6-aarch64.dmg", b"dmg")
         spec = [("macos", "aarch64", "dmg", artifact)]
 
         for package_id in ("", "com.example/custom", "com.example custom"):

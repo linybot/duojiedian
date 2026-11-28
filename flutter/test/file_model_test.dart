@@ -50,7 +50,7 @@ class _SentRead {
   const _SentRead(this.path, this.includeHidden);
 }
 
-class _FileBinding extends Fake implements RustdeskImpl {
+class _FileBinding extends Fake implements LinybotImpl {
   int _jobId = 0;
   final emptyDirsDispatch = Completer<void>();
 

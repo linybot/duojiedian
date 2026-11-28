@@ -424,7 +424,7 @@ class _DesktopTabState extends State<DesktopTab>
   // On Linux, GTK destroys the window on a close request unless prevent-close
   // is on. It is off for the cm and install windows, and onActiveWindowChanged()
   // turns it off to quit, so the window can no longer be saved or hidden.
-  // https://github.com/rustdesk/rustdesk/issues/16512
+  // https://github.com/rustdesk/linybot/issues/16512
   Future<bool> _isLinuxWindowClosed() async =>
       isLinux && isMainWindow && !await windowManager.isPreventClose();
 
@@ -455,7 +455,7 @@ class _DesktopTabState extends State<DesktopTab>
         controller.clear();
       }
       await windowController.hide();
-      await rustDeskWinManager
+      await linybotWinManager
           .call(WindowType.Main, kWindowEventHide, {"id": kWindowId!});
     }
 
@@ -481,8 +481,8 @@ class _DesktopTabState extends State<DesktopTab>
 
     // hide window on close
     if (isMainWindow) {
-      if (rustDeskWinManager.getActiveWindows().contains(kMainWindowId)) {
-        await rustDeskWinManager.unregisterActiveWindow(kMainWindowId);
+      if (linybotWinManager.getActiveWindows().contains(kMainWindowId)) {
+        await linybotWinManager.unregisterActiveWindow(kMainWindowId);
       }
       if (await _isLinuxWindowClosed()) return;
       // macOS specific workaround, the window is not hiding when in fullscreen.
@@ -654,7 +654,7 @@ class _DesktopTabState extends State<DesktopTab>
                         Offstage(
                             offstage: !showTitle,
                             child: const Text(
-                              "RustDesk",
+                              "Linybot",
                               style: TextStyle(fontSize: 13),
                             ).marginOnly(left: 2))
                       ]).marginOnly(
@@ -1334,7 +1334,7 @@ class AddButton extends StatelessWidget {
     return ActionIcon(
         message: 'New Connection',
         icon: IconFont.add,
-        onTap: () => rustDeskWinManager.call(
+        onTap: () => linybotWinManager.call(
             WindowType.Main, kWindowMainWindowOnTop, ""),
         isClose: false);
   }

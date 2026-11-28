@@ -1,12 +1,12 @@
 
-# Contribuer à RustDesk
+# Contribuer à Linybot
 
-RustDesk accueille les contributions de tous. Voici les directives si vous
+Linybot accueille les contributions de tous. Voici les directives si vous
 envisagez de nous aider :
 
 ## Contributions
 
-Les contributions à RustDesk ou à ses dépendances doivent être soumises sous
+Les contributions à Linybot ou à ses dépendances doivent être soumises sous
 forme de pull requests GitHub. Chaque pull request sera examinée par un
 contributeur principal (une personne ayant la permission d'intégrer des
 correctifs) et sera soit intégrée dans la branche principale, soit accompagnée
@@ -47,9 +47,9 @@ Pour des instructions git spécifiques, consultez le
 
 ## Conduite
 
-https://github.com/rustdesk/rustdesk/blob/master/docs/CODE_OF_CONDUCT.md
+https://github.com/rustdesk/linybot/blob/master/docs/CODE_OF_CONDUCT.md
 
 ## Communication
 
-Les contributeurs de RustDesk se retrouvent fréquemment sur
+Les contributeurs de Linybot se retrouvent fréquemment sur
 [Discord](https://discord.gg/nDceKgxnkV).

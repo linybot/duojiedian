@@ -18,7 +18,7 @@ use tokio_rustls::{rustls, TlsAcceptor};
 use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 
 const TIMEOUT: u64 = 5_000;
-const PAYLOAD: &[u8] = b"RustDesk websocket proxy test";
+const PAYLOAD: &[u8] = b"Linybot websocket proxy test";
 
 fn tls_acceptor() -> TlsAcceptor {
     // This self-signed identity is only used by the local mock servers.
@@ -297,7 +297,7 @@ async fn tcp_proxy_round_trip() {
 #[tokio::test]
 async fn websocket_proxy_connections() {
     // Keep configuration changes inside this integration test process.
-    *APP_NAME.write().unwrap() = format!("RustDesk WebSocket Test {}", std::process::id());
+    *APP_NAME.write().unwrap() = format!("Linybot WebSocket Test {}", std::process::id());
     option(keys::OPTION_ALLOW_INSECURE_TLS_FALLBACK, "Y");
     for scheme in ["http", "https"] {
         for url in ["ws://[::1]:21119", "wss://[::1]:21119"] {

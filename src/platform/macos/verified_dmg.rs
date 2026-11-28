@@ -7,7 +7,7 @@ use std::{
     process::{Command, ExitStatus, Output},
 };
 
-const UPDATE_DMG_MOUNT_TEMPLATE: &str = "/tmp/.rustdeskmount-XXXXXX";
+const UPDATE_DMG_MOUNT_TEMPLATE: &str = "/tmp/.linybotmount-XXXXXX";
 // macOS 27.0 deprecates hdiutil; this is not diskutil's minimum supported version.
 // Source: hdiutil(1), WHAT'S NEW: https://keith.github.io/xcode-man-pages/hdiutil.1.html
 pub(super) const HDIUTIL_DEPRECATED_MACOS_VERSION: u32 = 27;
