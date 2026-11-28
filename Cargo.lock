@@ -7061,7 +7061,7 @@ dependencies = [
 
 [[package]]
 name = "linybot"
-version = "1.7.4"
+version = "1.7.5"
 dependencies = [
  "android-wakelock",
  "android_logger",
@@ -7178,7 +7178,7 @@ dependencies = [
 
 [[package]]
 name = "linybot-portable-packer"
-version = "1.7.4"
+version = "1.7.5"
 dependencies = [
  "brotli",
  "dirs 5.0.1",

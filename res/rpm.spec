@@ -1,5 +1,5 @@
 Name:       linybot
-Version:    1.7.4
+Version:    1.7.5
 Release:    0
 Summary:    RPM package
 License:    GPL-3.0
