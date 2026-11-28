@@ -186,9 +186,17 @@ class UserModel {
     } finally {
       await reset(resetOther: true);
       // [duojiedian] No account any more: stop pinning the node it lived on,
-      // and forget every wrong-node guess so the next login starts fresh.
+      // forget every wrong-node guess, and put the picker back on "Auto" so an
+      // anonymous client rolls through the nodes again instead of sitting on a
+      // node that was only picked for the previous account.
       _nodesWithoutAccount.clear();
       await bind.mainSetOption(key: 'account-node-pin', value: '');
+      await bind.mainSetOption(key: 'manual-node-pin', value: '');
+      final custom = (await bind.mainGetOption(key: 'custom-rendezvous-server')).trim();
+      if (custom.isNotEmpty && _deployNodes.contains(_hostOf(custom))) {
+        await bind.mainSetOption(key: 'custom-rendezvous-server', value: '');
+        await bind.mainSetOption(key: 'relay-server', value: '');
+      }
       gFFI.dialogManager.dismissByTag(tag);
     }
   }
@@ -232,65 +240,98 @@ class UserModel {
 
   /// throw [RequestException]
   Future<LoginResponse> login(LoginRequest loginRequest) async {
-    final primary = await bind.mainGetApiServer();
+    // Every hbbs keeps its own account database, so the account may only exist
+    // on one of the deployment nodes. The login therefore tries the node the
+    // account was last seen on first, then every other node, and keeps the
+    // account on whichever node accepted it. Nothing here depends on the node
+    // currently shown in the picker: signing in IS the node switch.
+    final pin = (await bind.mainGetOption(key: 'account-node-pin')).trim();
+    final primary = (await bind.mainGetApiServer()).trim();
     final candidates = <String>[];
-    for (final url in [
-      primary,
-      for (final node in _deployNodes) ...['http://$node:21114', 'https://$node']
-    ]) {
+    void add(String url) {
       final u = url.trim();
-      if (u.isEmpty || candidates.contains(u)) {
-        continue;
-      }
+      if (u.isEmpty || candidates.contains(u)) return;
       candidates.add(u);
     }
-    // Nodes that already refused this account go last, so the node that really
-    // holds it is reached in the first round instead of after a wrong answer.
-    final unknown = _nodesWithoutAccount;
-    candidates.sort((a, b) {
-      final na = unknown.contains(_hostOf(a));
-      final nb = unknown.contains(_hostOf(b));
-      if (na == nb) return 0;
-      return na ? 1 : -1;
-    });
-    RequestException? lastError;
+
+    // The account node first (http + https), then the other nodes.
+    final ordered = <String>[
+      if (pin.isNotEmpty) ...[
+        'http://$pin:21114',
+        'https://$pin',
+      ],
+      for (final node in _deployNodes) ...[
+        'http://$node:21114',
+        'https://$node',
+      ],
+      primary,
+    ];
+    ordered.forEach(add);
+
+    final failures = <String>[];
     RequestException? credentialError;
     for (final url in candidates) {
+      final host = _hostOf(url);
       try {
-        debugPrint('login: trying $_hostOf(url)');
+        debugPrint('login: trying $host');
         final result = await _loginOn(url, loginRequest);
         if (result.access_token == null) {
           // A two-factor / email-verification challenge is a real answer from
-          // the node that owns the account: hand it back to the UI instead of
-          // moving on to the next node.
+          // the node that owns the account: hand it back to the UI.
           if (result.type == HttpType.kAuthResTypeEmailCheck ||
               result.type == HttpType.kAuthResTypeTfaCheck) {
             return result;
           }
-          // A node that does not own the account may answer without an error
-          // field at all; that still means "not here".
-          lastError ??= RequestException(0, 'login failed on ${_hostOf(url)}');
+          failures.add('$host: ${translate("Login failed")}');
           continue;
         }
-        // The account lives here: forget every wrong-node guess.
-        unknown.remove(_hostOf(url));
+        // Signed in here: this node is the account node from now on.
+        await _rememberAccountNode(url);
         return result;
       } on RequestException catch (e) {
-        debugPrint('login: ${_hostOf(url)} refused: ${e.cause}');
-        // A node without the account answers exactly like a wrong password, so
-        // it never ends the search; it only marks that node as "not here".
+        debugPrint('login: $host refused: ${e.cause}');
+        failures.add('$host: ${e.cause}');
         if (_isCredentialError(e.cause)) {
-          unknown.add(_hostOf(url));
           credentialError ??= e;
-        } else {
-          lastError = e;
         }
       } catch (e) {
-        debugPrint('login: ${_hostOf(url)} failed: $e');
-        lastError ??= RequestException(0, e.toString());
+        debugPrint('login: $host failed: $e');
+        failures.add('$host: ${translate("Login failed")}');
       }
     }
-    throw credentialError ?? lastError ?? RequestException(0, 'login failed');
+    // Every node answered: show what each one said, so a node that does not
+    // hold the account is not mistaken for a broken client.
+    final detail = failures.join(' / ');
+    throw credentialError != null
+        ? RequestException(credentialError.code,
+            detail.isNotEmpty ? detail : credentialError.cause)
+        : RequestException(0, detail.isNotEmpty ? detail : 'login failed');
+  }
+
+  /// Pin every node-dependent setting to the node that accepted the account,
+  /// so the client keeps dialling it and the API calls carry a valid token.
+  Future<void> _rememberAccountNode(String url) async {
+    final host = Uri.parse(url).host;
+    if (host.isEmpty) return;
+    _nodesWithoutAccount.remove(host);
+    await bind.mainSetOption(key: 'account-node-pin', value: host);
+    final manual = (await bind.mainGetOption(key: 'manual-node-pin')).trim();
+    if (manual.isNotEmpty && manual != host) {
+      await bind.mainSetOption(key: 'manual-node-pin', value: '');
+    }
+    final custom = (await bind.mainGetOption(key: 'custom-rendezvous-server')).trim();
+    if (custom.isNotEmpty && _hostOf(custom) != host) {
+      await bind.mainSetOption(key: 'custom-rendezvous-server', value: '');
+      await bind.mainSetOption(key: 'relay-server', value: '');
+    }
+    // A leftover API server pointing at another deployment node would answer
+    // "not signed in" for a token issued by this node.
+    final api = (await bind.mainGetOption(key: 'api-server')).trim();
+    if (api.isNotEmpty &&
+        _deployNodes.contains(_hostOf(api)) &&
+        _hostOf(api) != host) {
+      await bind.mainSetOption(key: 'api-server', value: '');
+    }
   }
 
   Future<LoginResponse> _loginOn(String url, LoginRequest loginRequest) async {
@@ -319,25 +360,7 @@ class UserModel {
       throw RequestException(0, '${body['error']}');
     }
 
-    final result = getLoginResponseFromAuthBody(body);
-    final token = result.access_token;
-    if (result.type == HttpType.kAuthResTypeToken && token != null) {
-      // [duojiedian] Keep the node that owns this account: it is dialled first
-      // from now on instead of searching the nodes again on every start.
-      final host = Uri.parse(url).host;
-      if (host.isNotEmpty) {
-        await bind.mainSetOption(key: 'account-node-pin', value: host);
-        // An explicit pick from an earlier session would outrank the account
-        // node, so it is dropped as soon as the real node is known.
-        await bind.mainSetOption(key: 'manual-node-pin', value: '');
-        final custom = await bind.mainGetOption(key: 'custom-rendezvous-server');
-        if (custom.isNotEmpty && _hostOf(custom) != host) {
-          await bind.mainSetOption(key: 'custom-rendezvous-server', value: '');
-          await bind.mainSetOption(key: 'relay-server', value: '');
-        }
-      }
-    }
-    return result;
+    return getLoginResponseFromAuthBody(body);
   }
 
   LoginResponse getLoginResponseFromAuthBody(Map<String, dynamic> body) {

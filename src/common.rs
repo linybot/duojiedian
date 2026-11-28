@@ -927,14 +927,25 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     if servers.len() < 2 || use_ws() || !rendezvous_failover_enabled() {
         return servers;
     }
-    if let Some(order) = cached_failover_order(&servers) {
-        return order;
-    }
-    let (mut healthy, degraded, down) = probe_all_servers(&servers).await;
-    healthy.sort_by_key(|(_, latency)| *latency);
-    let mut order: Vec<String> = healthy.iter().map(|(h, _)| h.clone()).collect();
-    order.extend(degraded.iter().cloned());
-    order.extend(down.iter().cloned());
+    // A cached order still has to be re-ordered by the node pins below: the
+    // account node is written from the login code and must win immediately,
+    // not ten seconds later when the cache expires.
+    let cached = cached_failover_order(&servers);
+    let (mut healthy, mut degraded, mut down) = (Vec::new(), Vec::new(), Vec::new());
+    let mut order: Vec<String> = match cached {
+        Some(order) => order,
+        None => {
+            let probed = probe_all_servers(&servers).await;
+            healthy = probed.0;
+            degraded = probed.1;
+            down = probed.2;
+            healthy.sort_by_key(|(_, latency)| *latency);
+            let mut order: Vec<String> = healthy.iter().map(|(h, _)| h.clone()).collect();
+            order.extend(degraded.iter().cloned());
+            order.extend(down.iter().cloned());
+            order
+        }
+    };
     // A node explicitly picked by the user wins over the latency order, as long
     // as it is actually alive; a dead pin falls back to the healthiest node.
     // The node that accepted the account login is the next hint: every hbbs
@@ -943,22 +954,27 @@ pub async fn rendezvous_servers_by_health() -> Vec<String> {
     // The account pin comes first: a signed-in controller must dial the node
     // that owns its account, even when `custom-rendezvous-server` still holds a
     // node picked before the login.
-    for preferred in [
-        account_node_pin(),
-        normalize_node(&get_option("custom-rendezvous-server".to_owned())),
-    ] {
-        if preferred.is_empty() {
-            continue;
-        }
-        let pref_alive = healthy.iter().any(|(h, _)| normalize_node(h) == preferred);
-        if !pref_alive {
-            continue;
-        }
-        if let Some(idx) = order.iter().position(|h| normalize_node(h) == preferred) {
+    let account_pin = account_node_pin();
+    if !account_pin.is_empty() {
+        // The node that owns the signed-in account is dialled first even when
+        // the probe rates it degraded: a slow or briefly failing handshake must
+        // not make the controller silently fall back to a node that has no
+        // account, which looked like "the login does not switch nodes".
+        if let Some(idx) = order.iter().position(|h| normalize_node(h) == account_pin) {
             let node = order.remove(idx);
             order.insert(0, node);
         }
-        break;
+    } else {
+        let preferred = normalize_node(&get_option("custom-rendezvous-server".to_owned()));
+        if !preferred.is_empty() {
+            let pref_alive = healthy.iter().any(|(h, _)| normalize_node(h) == preferred);
+            if pref_alive {
+                if let Some(idx) = order.iter().position(|h| normalize_node(h) == preferred) {
+                    let node = order.remove(idx);
+                    order.insert(0, node);
+                }
+            }
+        }
     }
     // Keep the classic latency view in sync, so the API server choice and the
     // stored `rendezvous-server` option follow the same health picture.
@@ -1213,6 +1229,19 @@ fn with_host_rotation<R>(f: impl FnOnce(&mut HostRotationState) -> R) -> R {
 /// node movement: manual choice always wins over rolling.
 pub fn manual_node_pin() -> String {
     normalize_node(&Config::get_option("manual-node-pin"))
+}
+
+/// The configured server string of the node that owns the signed-in account,
+/// if any. A signed-in controller stays on that node instead of spreading its
+/// registration over the whole deployment.
+pub fn account_node_pin_target() -> Option<String> {
+    let pin = account_node_pin();
+    if pin.is_empty() {
+        return None;
+    }
+    Config::get_rendezvous_servers()
+        .into_iter()
+        .find(|s| normalize_node(s) == pin)
 }
 
 pub fn host_node_rolling_enabled() -> bool {
@@ -1948,16 +1977,26 @@ fn get_api_server_(api: String, custom: String) -> String {
             return lic.api.clone();
         }
     }
+    let pin = account_node_pin();
     if !api.is_empty() {
-        return api.to_owned();
+        // A signed-in controller must talk to the node that owns its account.
+        // A leftover API server pointing at another deployment node (written by
+        // the node picker before the login) would answer "not signed in" for a
+        // token issued elsewhere, so the account node wins over it.
+        let api_host = normalize_node(&api);
+        let is_deploy_node = config::RENDEZVOUS_SERVERS
+            .iter()
+            .any(|n| *n == api_host.as_str());
+        if pin.is_empty() || !is_deploy_node || api_host == pin {
+            return api.to_owned();
+        }
     }
     let s0 = {
         // A signed-in controller has to talk to the node that owns the
         // account, not to whichever node happens to be fastest or was picked
         // before the login.
-        let pin = account_node_pin();
         if !pin.is_empty() {
-            pin
+            pin.clone()
         } else {
             get_custom_rendezvous_server(custom)
         }

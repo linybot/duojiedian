@@ -176,13 +176,24 @@ class _OnlineStatusWidgetState extends State<OnlineStatusWidget> {
   /// error status) means the network path works, so we are "online".
   probeNetwork() async {
     final urls = <String>{};
+    String pin = '';
     try {
+      pin = (await bind.mainGetOption(key: 'account-node-pin')).trim();
       final api = (await bind.mainGetApiServer()).trim();
       if (api.isNotEmpty) urls.add(api);
     } catch (_) {}
-    for (final node in const ['linybot.top', 'rust.linybot.top']) {
-      urls.add('http://$node:21114');
-      urls.add('https://$node');
+    if (pin.isNotEmpty) {
+      // Signed in: the client only talks to the node that owns the account, so
+      // that node decides whether we are online.
+      urls
+        ..clear()
+        ..add('http://$pin:21114')
+        ..add('https://$pin');
+    } else {
+      for (final node in const ['linybot.top', 'rust.linybot.top']) {
+        urls.add('http://$node:21114');
+        urls.add('https://$node');
+      }
     }
     var online = false;
     for (final u in urls) {

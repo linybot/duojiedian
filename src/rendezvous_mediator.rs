@@ -368,6 +368,12 @@ impl RendezvousMediator {
                 // by a "ID does not exist" from a node this host never joined.
                 if let Some(target) = crate::host_rotation_target() {
                     servers = vec![target];
+                } else if let Some(target) = crate::account_node_pin_target() {
+                    // Signed in: the account lives on one hbbs, so register only
+                    // there. Spreading the registration over the other nodes is
+                    // what made the client look like it "jumped" to another node
+                    // after a successful login.
+                    servers = vec![target];
                 }
                 // Multi-node auto failover: with several nodes configured, a node
                 // that is down must not tear the healthy node's registration down.
